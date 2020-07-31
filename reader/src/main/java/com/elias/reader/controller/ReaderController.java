@@ -1,12 +1,12 @@
 package com.elias.reader.controller;
 
 import com.elias.book.entity.Book;
+import com.elias.common.annotation.LogIt;
+import com.elias.common.response.Response;
 import com.elias.reader.service.ReaderService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author chengrui
@@ -23,8 +23,16 @@ public class ReaderController {
         this.readerService = readerService;
     }
 
+    @LogIt
     @GetMapping("/book/search")
-    public Book searchBook(@RequestParam(name = "category") String category){
-        return this.readerService.searchBook(category);
+    public Response<Book> searchBook(@RequestParam(name = "category") String category){
+        return Response.ok(this.readerService.searchBook(category));
     }
+
+    @LogIt
+    @PostMapping("/book")
+    public Response<Book> addBook(@RequestBody Book book){
+        return Response.ok(this.readerService.addBook(book));
+    }
+
 }
