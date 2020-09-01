@@ -1,0 +1,37 @@
+t_user_account表
+id int 自增主键
+account varchar(30) 账号
+password varchar(50) 密码的盐值
+enabled bit(1) 是否被禁用
+create_time datetime 创建时间
+update_time datetime 最新的修改时间
+
+
+t_reader_info
+id int 自增主键
+real_name varchar(50) 真实姓名
+mobile varchar(20) 手机号码
+email varchar(30) 邮箱
+id_number char(18) 身份证号码
+user_id int t_user_account表的主键
+create_time datetime 创建时间
+update_time datetime 最新的修改时间
+
+t_roles
+id tinyint 自增主键
+role_name varchar(50) 角色名称
+enabled bit(1) 是否启用
+
+
+t_user_role
+id int 自增主键
+user_id int t_user_account表的主键
+role_id tinyint t_roles表的主键
+
+t_access_token
+id int 自增主键
+user_id int t_user_account表的主键
+access_token char(36) 令牌
+create_time datetime 创建时间
+expire_time mediumint 令牌的有效时间(单位: 秒)
+

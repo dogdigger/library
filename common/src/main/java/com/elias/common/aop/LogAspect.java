@@ -1,5 +1,6 @@
 package com.elias.common.aop;
 
+import com.elias.common.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -12,6 +13,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 
 /**
  * @author chengrui
@@ -43,9 +45,7 @@ public class LogAspect {
                 // 非get请求就取出请求体
                 if(!request.getMethod().equalsIgnoreCase("get")){
                     builder.append(", body={");
-                    for (Object arg : joinPoint.getArgs()){
-                        builder.append(arg);
-                    }
+                    Arrays.stream(joinPoint.getArgs()).forEach(builder::append);
                     builder.append("}");
                 }else {
                     builder.append(", QueryString=").append(request.getQueryString());
@@ -53,6 +53,7 @@ public class LogAspect {
                 log.info(builder.append("]").toString());
             }
         }
+        String targetMethod = getTargetMethodName(joinPoint);
         try{
             return joinPoint.proceed();
         } catch (Throwable throwable) {
@@ -64,14 +65,19 @@ public class LogAspect {
     @Around(TIME_IT_POINTCUT)
     public Object timeIt(ProceedingJoinPoint joinPoint){
         long start = System.currentTimeMillis();
+        String targetMethod = getTargetMethodName(joinPoint);
         try{
             Object res = joinPoint.proceed();
             long end = System.currentTimeMillis();
-            log.info("{} cost {}ms to execute......", joinPoint.getSignature().getDeclaringTypeName() + "." + joinPoint.getSignature().getName(), end-start);
+            log.info("{} cost {}ms to execute......", targetMethod, end-start);
             return res;
         } catch (Throwable throwable) {
-            log.error("serious error: " + throwable.getMessage());
-            return null;
+            log.error("a serious error: " + throwable.getMessage() + " happened while execute: " + targetMethod);
+            throw new ServiceException(throwable.getMessage());
         }
+    }
+
+    private String getTargetMethodName(ProceedingJoinPoint joinPoint){
+        return joinPoint.getSignature().getDeclaringTypeName() + "." + joinPoint.getSignature().getName();
     }
 }
