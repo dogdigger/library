@@ -1,0 +1,12 @@
+@startuml
+'idea.partialRender
+企业管理员 -> auth授权中心: 提交appKey申请
+auth授权中心 --> auth授权中心: 管理员审核appKey申请
+auth授权中心 --> 企业管理员: 告诉企业管理员appKey和appSecret
+企业管理员 -> auth授权中心: 使用appKey申请accessToken
+auth授权中心 --> 企业管理员: 返回accessToken
+
+
+Alice -> Bob: Another authentication Request
+Alice <-- Bob: another authentication Response
+@enduml

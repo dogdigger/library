@@ -1,3 +1,12 @@
+t_client_info
+id smallint auto increment comment '自增主键'
+client_name varchar(50) comment '客户端名称'
+client_desc varchar(100) comment '简介'
+client_id binary(16) comment '客户端id'
+client_secret varchar(20)
+created_date datetime comment '创建时间'
+
+
 t_user_account表
 id int 自增主键
 account varchar(30) 账号

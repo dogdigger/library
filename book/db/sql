@@ -1,0 +1,61 @@
+t_book_library_info
+id int unsigned auto increment comment '自增主键',
+isbn varchar(13) unique comment 'isbn号码。同一本书的isbn编号相同，同一本书不同版本，isbn编号不同'
+library_id comment '图书馆编号'
+created_date datetime comment '入馆时间'
+status bit(1) comment '在馆状态'
+
+
+t_book_info
+id int unsigned auto increment comment '自增主键',
+book_id int comment '书籍编号'
+publish_time date() comment '出版时间'
+publisher varchar(50) comment '出版社'
+description varchar(500) comment '书籍简介'
+edition tinyint unsigned comment '版本号'
+name varchar(100) comment '书名'
+price varchar(5) comment '单价'
+category varchar(50) comment '类别'
+
+t_tag_info
+id tinyint unsigned auto increment comment '自增主键'
+name varchar(50) comment '标签名称'
+deleted bit(1) comment '是否已删除'
+
+t_book_tag
+id int unsigned auto increment comment '自增主键',
+book_id int comment '书的编号'
+tag_id tinyint comment '标签标号'
+deleted bit(1) comment '是否已删除'
+
+t_author_info
+id int unsigned auto increment comment '自增主键'
+name varchar(50) comment '作者名字'
+country varchar(50) comment '国家'
+description varchar(500) comment '作者简介'
+
+t_book_author
+id int unsigned auto increment comment '自增主键'
+book_id int comment '书的编号'
+author_id int comment '作者编号'
+
+t_book_pic
+id int unsigned auto increment comment '自增主键',
+book_id int comment '书籍编号'
+download_url varchar(100) comment '图片链接地址'
+deleted bit(1) comment '是否已删除'
+
+t_library_info
+id tinyint unsigned auto increment comment '自增主键'
+name varchar(100) comment '图书馆的名称'
+address varchar(200) comment '地址'
+telephone varchar(20) comment '联系电话'
+opening_time char(5) comment '工作日开门时间'
+closing_time char(5) comment '工作日关门时间'
+
+
+t_borrow_record
+id int unsigned auto_increment comment '自增主键'
+reader_id
+book_id
+
