@@ -1,5 +1,6 @@
 package com.elias.mq.utils;
 
+import com.elias.mq.message.Person;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 
@@ -24,13 +25,8 @@ public class JSONUtils {
         return null;
     }
 
-    public static <T> T jsonToObj(String s, Class<T> clazz) {
-        try{
-            return objectMapper.readValue(s, clazz);
-        } catch (IOException e) {
-            System.err.println(e.getMessage());
-        }
-        return null;
+    public static <T> T jsonToObj(String s, Class<T> clazz) throws IOException {
+        return objectMapper.readValue(s, clazz);
     }
 
     public static <T> T objToJson(String s, TypeReference<T> reference) {

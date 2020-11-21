@@ -10,6 +10,6 @@ import java.util.UUID;
  * <p>create at: 2020/9/21 2:17 下午</p>
  * <p>description: </p>
  */
-public interface ClientRepository extends JpaRepository<Client, Integer> {
-    Client findById(UUID id);
+public interface ClientRepository extends JpaRepository<Client, UUID> {
+    Client findByName(String name);
 }

@@ -1,7 +1,9 @@
 package com.elias.entity;
 
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -13,28 +15,60 @@ import java.util.UUID;
  * <p>description: 通过手机号码进行注册</p>
  */
 @Entity
-@Table(name = "user")
+@Table(name = "t_user_info")
 @Data
 public class User {
+    /**
+     * 用户id
+     */
     @Id
     @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDGenerator")
-    @Column(name = "id", columnDefinition = "binary(16) comment '主键，也是用户的id'")
+    @Column(name = "`id`", columnDefinition = "binary(16) comment '主键，也是用户的id'")
     private UUID id;
 
-    @Column(name = "mobile", nullable = false, updatable = false, unique = true, columnDefinition = "char(11) comment '手机号码'")
+    /**
+     * 用户姓名-不为空
+     */
+    @Column(name = "`name`", columnDefinition = "varchar(50) comment '用户的姓名'", nullable = false)
+    private String name;
+
+    /**
+     * 用户的性别-不为空，默认为1
+     */
+    @Column(name = "`gender`", columnDefinition = "tinyint unsigned default 1 comment '性别'", nullable = false)
+    private Integer gender;
+
+    /**
+     * 头像地址-不为空
+     */
+    @Column(name = "`avatar`", columnDefinition = "varchar(100) comment '头像的地址'", nullable = false)
+    private String avatar;
+
+    /**
+     * 手机号码。不能为空，唯一
+     */
+    @Column(name = "`mobile`", nullable = false, unique = true, columnDefinition = "char(11) comment '手机号码'")
     private String mobile;
 
-    @Column(name = "account", nullable = false, updatable = false, unique = true, columnDefinition = "varchar(20) comment '用户账号'")
-    private String account;
+    /**
+     * 邮箱
+     */
+    @Column(name = "`email`", columnDefinition = "varchar(30) comment '邮箱'")
+    private String email;
 
-    @Column(name = "pwd_salt", nullable = false, columnDefinition = "varchar(75) comment '密码'")
-    private String pwdSalt;
-
+    /**
+     * 记录的创建时间
+     */
     @Column(name = "create_time", nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
+    @CreationTimestamp
     private Date createTime;
 
+    /**
+     * 记录的最后更新时间
+     */
     @Column(name = "update_time", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
+    @UpdateTimestamp
     private Date updateTime;
 }

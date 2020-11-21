@@ -11,5 +11,5 @@ import java.util.UUID;
  * <p>description: </p>
  */
 public interface AccessTokenRepository extends JpaRepository<AccessToken, Long> {
-    AccessToken findByOwnerId(UUID ownerId);
+    AccessToken findByOwnerIdAndOwnerType(UUID ownerId, Integer ownerType);
 }

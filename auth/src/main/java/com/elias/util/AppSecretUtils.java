@@ -38,7 +38,7 @@ public final class AppSecretUtils {
         char[] bits = new char[64];
         int i = 63;
         while (i >= 0) {
-            bits[i--] = (char) ('0' + (number & 1));
+            bits[i--] = (number & 1) == 1 ? '1' : '0';
             number = number >> 1;
         }
         return new String(bits);

@@ -1,20 +1,15 @@
 package com.elias.service;
 
 import com.elias.entity.AccessToken;
-import com.elias.entity.User;
-import com.elias.exception.ErrorCode;
-import com.elias.exception.RestException;
-import com.elias.form.UserLoginByAccountForm;
+import com.elias.model.view.AccessTokenView;
 import com.elias.repository.AccessTokenRepository;
 import com.elias.repository.ClientRepository;
 import com.elias.repository.UserRepository;
-import com.elias.view.AccessTokenView;
+import com.elias.util.DateUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -25,67 +20,50 @@ import java.util.UUID;
 @Service
 public class AccessTokenService {
     private final AccessTokenRepository accessTokenRepository;
-    private final UserRepository userRepository;
-    private final ClientRepository clientRepository;
-    @Value("${com.elias.auth.token.survive}")
-    private Integer defaultTokenSurvivalTime;
+    private final Integer DEFAULT_USER_TOKEN_EXPIRE = 7200;//2小时
+    private final Integer DEFAULT_CLIENT_TOKEN_EXPIRE = 604800;//7天
 
     @Autowired
-    public AccessTokenService(AccessTokenRepository accessTokenRepository, UserRepository userRepository, ClientRepository clientRepository) {
+    public AccessTokenService(AccessTokenRepository accessTokenRepository) {
         this.accessTokenRepository = accessTokenRepository;
-        this.userRepository = userRepository;
-        this.clientRepository = clientRepository;
     }
 
     /**
-     * 访问令牌是否在有效期内
+     * 获取令牌。重复获取不会生成新令牌
      *
-     * @param accessToken 访问令牌实体对象, {@link AccessToken}
-     * @return 布尔值
+     * @param ownerId   令牌的接受者id，可能是一个client，也可能是一个user
+     * @param ownerType 接受者的类型
+     * @return {@link AccessTokenView}
      */
-    private boolean isAccessTokenSurvival(AccessToken accessToken) {
-        return accessToken.getCreatedDate().getTime() + accessToken.getSurvivalTime() > System.currentTimeMillis();
-    }
-
-    private AccessTokenView accessTokenToView(AccessToken accessToken) {
-        AccessTokenView tokenView = new AccessTokenView();
-        BeanUtils.copyProperties(accessToken, tokenView);
-        tokenView.setToken(accessToken.getId());
-        return tokenView;
-    }
-
-    // TODO aop + redis
-    public AccessTokenView userLoginByAccount(UserLoginByAccountForm userLoginByAccountForm) {
-        User user = userRepository.findByAccount(userLoginByAccountForm.getUserName());
-        if (user == null) {
-            throw new RestException(ErrorCode.USER_NOT_FOUND);
+    public AccessTokenView getToken(UUID ownerId, AccessToken.OwnerType ownerType) {
+        AccessToken accessToken = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
+        if (accessToken != null && isTokenExpired(accessToken)) {
+            // 如果令牌已过期就删除
+            accessTokenRepository.delete(accessToken);
+            accessToken = null;
         }
-        if (!user.getEnable()) {
-            throw new RestException(ErrorCode.USER_DISABLED);
-        }
-        if (!user.getPwdSalt().equals(userLoginByAccountForm.getUserPwd())) {
-            throw new RestException(ErrorCode.WRONG_PASSWORD);
-        }
-        return createToken(user.getId(), false, null);
-    }
-
-    public AccessTokenView clientLogin(String authorizationHeader) {
-        return null;
-    }
-
-    public AccessTokenView createToken(UUID ownerId, boolean isClient, Integer expiresIn) {
-        AccessToken accessToken = accessTokenRepository.findByOwnerId(ownerId);
+        int expire = ownerType.getType() == AccessToken.OwnerType.CLIENT.getType() ?
+                DEFAULT_CLIENT_TOKEN_EXPIRE : DEFAULT_USER_TOKEN_EXPIRE;
         if (accessToken == null) {
-            // 创建新的令牌
             accessToken = new AccessToken();
-            accessToken.setIsClientToken(isClient);
-            accessToken.setCreatedDate(new Date());
             accessToken.setOwnerId(ownerId);
-            accessToken.setSurvivalTime(expiresIn == null ? defaultTokenSurvivalTime : expiresIn);
-        } else if (!isAccessTokenSurvival(accessToken)) {
-            // 更新令牌
-            accessToken.setCreatedDate(new Date());
+            accessToken.setOwnerType(ownerType.getType());
+            accessToken.setExpire(expire);
+            accessToken = accessTokenRepository.save(accessToken);
         }
-        return accessTokenToView(accessTokenRepository.save(accessToken));
+        AccessTokenView view = new AccessTokenView();
+        BeanUtils.copyProperties(accessToken, view);
+        view.setExpire((int) (DateUtils.timestamp(accessToken.getCreatedDate()) + expire - DateUtils.timestampNow()));
+        return view;
+    }
+
+    /**
+     * 令牌是否已过期
+     *
+     * @param accessToken 令牌实体对象，{@link AccessToken}
+     * @return boolean
+     */
+    private boolean isTokenExpired(AccessToken accessToken) {
+        return DateUtils.timestampNow() >= DateUtils.timestamp(accessToken.getCreatedDate()) + accessToken.getExpire();
     }
 }

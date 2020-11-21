@@ -1,4 +1,4 @@
-package com.elias.mq.utils;
+package com.elias.mq.message;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

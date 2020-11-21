@@ -13,4 +13,11 @@ public final class UUIDUtils {
     public static UUID randomUUID(){
         return UUID.randomUUID();
     }
+
+    public static void main(String[] args) {
+        System.out.println(randomUUID());
+        System.out.println(randomUUID());
+        System.out.println(randomUUID());
+        System.out.println(randomUUID());
+    }
 }

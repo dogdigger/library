@@ -8,5 +8,5 @@ package com.elias.config;
 public final class PathDefinition {
     private PathDefinition(){}
 
-    public static final String API_AUTH_BASE_URI = "/api/auth";
+    public static final String API_AUTH_URI = "/api/auth";
 }

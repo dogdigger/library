@@ -1,30 +1,76 @@
+客户端
 t_client_info
-id smallint auto increment comment '自增主键'
-client_name varchar(50) comment '客户端名称'
-client_desc varchar(100) comment '简介'
-client_id binary(16) comment '客户端id'
-client_secret varchar(20)
+id binary(16) comment '主键，客户端id'
+client_name varchar(50) not null comment '客户端名称'
+client_desc varchar(100) not null comment '简介'
+client_secret varchar(20) not null comment '客户端secret'
+created_date datetime comment '创建时间'
+updated_date datetime comment '更新时间'
+
+访问令牌
+id binary(16)
+expire mediumint unsigned comment '令牌的有效时间，单位:秒'
+owner binary(16) 账号拥有者的id
+owner_type tinyint unsigned comment '令牌的类型,1表示客户端令牌，2表示用户令牌'
 created_date datetime comment '创建时间'
 
+用户
+user_id binary(16)
+real_name varchar(50) comment '真实姓名'
+country
+province
+city
+address
+gender
+avatar
+mobile
+email
+手机号和邮箱至少填一个
 
-t_user_account表
-id int 自增主键
-account varchar(30) 账号
+
+用户账号
+user_id
 password varchar(50) 密码的盐值
-enabled bit(1) 是否被禁用
-create_time datetime 创建时间
+expire  账号的有效期
+created_date datetime 创建时间
 update_time datetime 最新的修改时间
 
+手机验证码--手机号登录。需要定时清除
+id
+code    验证码
+expire 有效期
+mobile 手机号
+created_date 创建时间
 
+
+
+应用的用户--当用户登录应用时，先验证账号密码，通过之后再看是否是这个应用的用户，如果不是则加入
+client_user
+client_id
+account_id
+type    '身份'-->一个应用只能有一个超级管理员，但是可以有多个普通管理员。通过权限来实现
+disabled '账号是否被禁用'-->管理员在某些情况下可以禁用某个用户
+
+
+
+各应用的管理员
+t_client_admin
+id 主键
+client_id
+account_id
+type
+
+
+
+读者
 t_reader_info
 id int 自增主键
 real_name varchar(50) 真实姓名
-mobile varchar(20) 手机号码
-email varchar(30) 邮箱
 id_number char(18) 身份证号码
 user_id int t_user_account表的主键
-create_time datetime 创建时间
-update_time datetime 最新的修改时间
+created_date datetime 创建时间
+updated_date datetime 最新的修改时间
+
 
 t_roles
 id tinyint 自增主键

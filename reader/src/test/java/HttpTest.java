@@ -53,15 +53,17 @@ public class HttpTest {
 
     public static void main(String[] args) {
         /**
-         * DepartmentUser(userId=ChengRui, name=程锐, department=[5, 1], order=[0, 0], position=, mobile=15926643146, gender=1, email=, leaderInDept=[0, 0])
-         * DepartmentUser(userId=XiaoCong, name=小葱, department=[3, 1], order=[0, 0], position=, mobile=, gender=0, email=, leaderInDept=[0, 0])
-         * DepartmentUser(userId=hq, name=黄卓权, department=[2, 1], order=[0, 0], position=, mobile=13430316560, gender=1, email=, leaderInDept=[0, 0])
+         * DepartmentUser(userId=ChengRui, name=程锐, department=[1, 5], order=[0, 0], position=, mobile=15926643146, gender=1, email=, leaderInDept=[0, 0], avatar=http://wework.qpic.cn/bizmail/XQ8xC60tr9cibkmEoEG3KDJasyKsJmJEiarvB2Dq8eYCGOxHv6yQnaQA/0, thumbAvatar=http://wework.qpic.cn/bizmail/XQ8xC60tr9cibkmEoEG3KDJasyKsJmJEiarvB2Dq8eYCGOxHv6yQnaQA/100, telephone=, alias=, status=1, address=null)
+         * DepartmentUser(userId=XiaoCong, name=小葱, department=[1, 3], order=[0, 0], position=, mobile=, gender=0, email=, leaderInDept=[0, 0], avatar=http://wework.qpic.cn/bizmail/6qricOZcNDDB2JExkzEh3n9MB8ylr6xdDI7NREnxA1Foj8cbatIVzjg/0, thumbAvatar=http://wework.qpic.cn/bizmail/6qricOZcNDDB2JExkzEh3n9MB8ylr6xdDI7NREnxA1Foj8cbatIVzjg/100, telephone=, alias=, status=4, address=null)
+         * DepartmentUser(userId=hq, name=黄卓权, department=[1, 2], order=[0, 0], position=, mobile=13430316560, gender=1, email=, leaderInDept=[0, 0], avatar=https://wework.qpic.cn/bizmail/TPwTkMVs6tzZow4kUh0KMLt2uD6eokDb0brlicSv54LAawhAibur7ic7g/0, thumbAvatar=https://wework.qpic.cn/bizmail/TPwTkMVs6tzZow4kUh0KMLt2uD6eokDb0brlicSv54LAawhAibur7ic7g/100, telephone=, alias=, status=1, address=null)
+         * DepartmentUser(userId=zhangsanfeng, name=张三丰, department=[1], order=[0], position=, mobile=12345678912, gender=1, email=, leaderInDept=[0], avatar=, thumbAvatar=, telephone=, alias=, status=4, address=)
          */
         List<Department> departmentList = getDepartList();
         for (Department depart : departmentList) {
-            for(DepartmentUser user : getDepartEmployee(depart.getId())) {
-                System.out.println(user);
-            }
+//            for(DepartmentUser user : getDepartEmployee(depart.getId())) {
+//                System.out.println(user);
+//            }
+            System.out.println(depart);
         }
     }
 }

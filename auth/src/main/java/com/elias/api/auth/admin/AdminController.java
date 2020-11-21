@@ -1,52 +1,49 @@
 package com.elias.api.auth.admin;
 
 import com.elias.config.PathDefinition;
-import com.elias.form.UserLoginByAccountForm;
-import com.elias.form.AppSecretApplyForm;
-import com.elias.view.AccessTokenView;
-import com.elias.view.AppSecretView;
+import com.elias.model.form.ClientCreateForm;
+import com.elias.model.view.ClientView;
+import com.elias.response.GenericResponse;
+import com.elias.service.AdminService;
+import com.elias.service.ClientService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.IOException;
 
 /**
  * @author chengrui
  * <p>create at: 2020/9/23 11:43 上午</p>
  * <p>description: </p>
  */
-@RestController
-@RequestMapping(PathDefinition.API_AUTH_BASE_URI + "/admin")
+@Controller
+@RequestMapping(PathDefinition.API_AUTH_URI + "/admin")
 public class AdminController {
-//    private final AdminService adminService;
-//
-//    public AdminController(AdminService adminService) {
-//        this.adminService = adminService;
-//    }
-//
-//    /**
-//     * 系统管理员登录
-//     * @param userLoginByAccountForm 登录表单
-//     * @return 登录结果
-//     */
-//    @PostMapping("/login")
-//    public ResponseEntity<AccessTokenView> login(@RequestBody @Valid UserLoginByAccountForm userLoginByAccountForm) {
-//        return ResponseEntity.ok(adminService.adminLogin(userLoginByAccountForm));
-//    }
-//
-//    /**
-//     * 系统管理员审核appKey申请
-//     * @param applyForm
-//     * @return
-//     */
-//    @PostMapping("/appSecret")
-//    public ResponseEntity<AppSecretView> createAppSecret(@RequestBody @Valid AppSecretApplyForm applyForm) {
-//        return ResponseEntity.ok(adminService.createAppSecret(applyForm));
-//    }
-//
-//    @GetMapping("/logout")
-//    public ResponseEntity<String> logout() {
-//        adminService.adminLogout();
-//        return ResponseEntity.ok("ok");
-//    }
+    private final AdminService adminService;
+
+    public AdminController(AdminService adminService) {
+        this.adminService = adminService;
+    }
+
+    @PostMapping("/client/actions/create")
+    public GenericResponse<ClientView> createClient(@RequestBody @Valid ClientCreateForm clientCreateForm) {
+        return new GenericResponse<>(adminService.createClient(clientCreateForm));
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> redirect(){
+        return ResponseEntity.ok("hello, redirect");
+    }
+
+    @GetMapping("/redirect")
+    public void testRedirect(HttpServletResponse response) throws IOException {
+        response.sendRedirect("http://www.baidu.com");
+    }
+    @GetMapping("/redirect")
+    public String testRedirect() {
+        return "redirect:http://www.baidu.com";
+    }
 }

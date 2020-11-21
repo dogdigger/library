@@ -1,27 +1,21 @@
 package com.elias.api.auth.client;
 
+import com.elias.config.PathDefinition;
+import com.elias.service.ClientService;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 /**
  * @author chengrui
  * <p>create at: 2020/9/22 8:59 下午</p>
  * <p>description: </p>
  */
-//@RestController
-//@RequestMapping(PathDefinition.AUTH_BASE_URI)
-//public class ClientController {
-//    private final ClientInfoService clientInfoService;
-//
-//    public ClientController(ClientInfoService clientInfoService) {
-//        this.clientInfoService = clientInfoService;
-//    }
-//
-//    /**
-//     * 申请appSecret。此接口不对外暴露
-//     *
-//     * @param appSecretApplyForm 封装了申请信息
-//     * @return {@link AppSecretView}
-//     */
-//    @PostMapping("/appKey")
-//    public AppSecretView applyAppSecret(@RequestBody @Valid AppSecretApplyForm appSecretApplyForm) {
-//        return clientInfoService.createAppSecret(appSecretApplyForm);
-//    }
-//}
+@RestController
+@RequestMapping(PathDefinition.API_AUTH_URI + "/client")
+public class ClientController {
+    private final ClientService clientService;
+
+    public ClientController(ClientService clientService) {
+        this.clientService = clientService;
+    }
+}

@@ -11,9 +11,15 @@ import java.util.List;
 @Data
 public class DepartmentUser {
 
+    /**
+     * 帐号长度为 1-64 个字符
+     */
     @JsonProperty("userid")
     private String userId;
 
+    /**
+     * 请输入不多于64个字符
+     */
     private String name;
 
     private List<Integer> department;
@@ -30,4 +36,17 @@ public class DepartmentUser {
 
     @JsonProperty("is_leader_in_dept")
     private List<Integer> leaderInDept;
+
+    private String avatar;
+
+    @JsonProperty("thumb_avatar")
+    private String thumbAvatar;
+
+    private String telephone;
+
+    private String alias;
+
+    private Integer status;
+
+    private String address;
 }
