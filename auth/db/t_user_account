@@ -31,7 +31,8 @@ email
 用户账号
 user_id
 password varchar(50) 密码的盐值
-expire  账号的有效期
+salt
+enabled
 created_date datetime 创建时间
 update_time datetime 最新的修改时间
 

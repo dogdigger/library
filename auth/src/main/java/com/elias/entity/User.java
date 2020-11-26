@@ -15,7 +15,13 @@ import java.util.UUID;
  * <p>description: 通过手机号码进行注册</p>
  */
 @Entity
-@Table(name = "t_user_info")
+@Table(
+        name = "t_user_info",
+        indexes = {
+            @Index(name = "idx_mobile_unique", unique = true, columnList = "mobile"),
+            @Index(name = "idx_email", columnList = "email")
+        }
+)
 @Data
 public class User {
     /**
@@ -29,29 +35,29 @@ public class User {
     /**
      * 用户姓名-不为空
      */
-    @Column(name = "`name`", columnDefinition = "varchar(50) comment '用户的姓名'", nullable = false)
+    @Column(name = "`name`", columnDefinition = "varchar(50) not null comment '用户的姓名'")
     private String name;
 
     /**
      * 用户的性别-不为空，默认为1
      */
-    @Column(name = "`gender`", columnDefinition = "tinyint unsigned default 1 comment '性别'", nullable = false)
+    @Column(name = "`gender`", columnDefinition = "tinyint unsigned not null default 1 comment '性别'")
     private Integer gender;
 
     /**
-     * 头像地址-不为空
+     * 头像地址
      */
-    @Column(name = "`avatar`", columnDefinition = "varchar(100) comment '头像的地址'", nullable = false)
+    @Column(name = "`avatar`", columnDefinition = "varchar(100) comment '头像的地址'")
     private String avatar;
 
     /**
      * 手机号码。不能为空，唯一
      */
-    @Column(name = "`mobile`", nullable = false, unique = true, columnDefinition = "char(11) comment '手机号码'")
+    @Column(name = "`mobile`", columnDefinition = "char(11) not null comment '手机号码'")
     private String mobile;
 
     /**
-     * 邮箱
+     * 邮箱。如果不空，必须唯一
      */
     @Column(name = "`email`", columnDefinition = "varchar(30) comment '邮箱'")
     private String email;

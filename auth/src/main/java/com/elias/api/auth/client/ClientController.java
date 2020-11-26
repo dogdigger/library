@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>description: </p>
  */
 @RestController
-@RequestMapping(PathDefinition.API_AUTH_URI + "/client")
+@RequestMapping(PathDefinition.URI_API_AUTH + "/client")
 public class ClientController {
     private final ClientService clientService;
 

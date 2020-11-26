@@ -10,6 +10,6 @@ import java.util.UUID;
  * <p>create at: 2020/9/2 1:06 下午</p>
  * <p>description: </p>
  */
-public interface AccessTokenRepository extends JpaRepository<AccessToken, Long> {
+public interface AccessTokenRepository extends JpaRepository<AccessToken, UUID> {
     AccessToken findByOwnerIdAndOwnerType(UUID ownerId, Integer ownerType);
 }

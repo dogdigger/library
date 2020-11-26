@@ -53,6 +53,6 @@ public class Client implements Serializable {
      */
     @Temporal(TemporalType.TIMESTAMP)
     @CreationTimestamp
-    @Column(name = "created_date", updatable = false)
-    private Date createdDate;
+    @Column(name = "create_time", updatable = false)
+    private Date createTime;
 }

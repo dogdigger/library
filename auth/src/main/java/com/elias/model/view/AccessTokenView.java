@@ -17,7 +17,7 @@ public class AccessTokenView {
     private UUID id;
 
     /**
-     * 令牌的有效时间，单位为秒
+     * 令牌剩余的生存时间，单位为毫秒
      */
-    private Integer expire;
+    private Integer ttl;
 }

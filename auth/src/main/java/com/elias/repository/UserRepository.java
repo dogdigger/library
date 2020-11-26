@@ -19,4 +19,8 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     User findByAccountOrMobile(@Param("userName") String userName);
 
     User findByAccount(String account);
+
+    User findByMobile(String mobile);
+
+    User findByEmail(String email);
 }

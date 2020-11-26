@@ -1,4 +1,4 @@
-package com.elias.exception;
+package com.elias.common.exception;
 
 import org.springframework.http.HttpStatus;
 
@@ -75,10 +75,11 @@ public enum ErrorCode {
 
 
     // ----------------------------------------- internal error(500): 50000 ----------------------------------------
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 50000, "internal server error"),
     /**
      * 配置项错误
      */
-    WRONG_CONFIGURATION_ITEM(HttpStatus.INTERNAL_SERVER_ERROR, 50000, "wrong configuration item");
+    WRONG_CONFIGURATION_ITEM(HttpStatus.INTERNAL_SERVER_ERROR, 50001, "wrong configuration item");
 
 
     private final HttpStatus httpStatus;

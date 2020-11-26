@@ -1,7 +1,6 @@
 package com.elias.reader.config;
 
 import com.elias.common.aop.LogAspect;
-import com.elias.common.exception.GlobalExceptionHandler;
 import org.springframework.context.annotation.Bean;
 
 /**

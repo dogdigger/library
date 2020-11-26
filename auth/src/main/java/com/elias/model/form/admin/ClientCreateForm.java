@@ -1,4 +1,4 @@
-package com.elias.model.form;
+package com.elias.model.form.admin;
 
 import lombok.Data;
 

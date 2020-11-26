@@ -8,26 +8,23 @@ package com.elias.config;
 public final class Constants {
     private Constants(){}
 
-    /**
-     * 一天之内密码最多能输错的次数
-     */
-    public static final Integer MAX_WRONG_TIMES_ONE_DAY = 3;
+    public static final String HEADER_AUTHORIZATION = "Authorization";
+
+    public static final String HEADER_AUTHORIZATION_BEARER_PREFIX = "Bearer ";
+
+    public static final String HEADER_AUTHORIZATION_BASIC_PREFIX = "Basic ";
+
+    public static final String CLIENT_TOKEN_EXPIRE_KEY = "expire.token.client";
+
+    public static final String USER_TOKEN_EXPIRE_KEY = "expire.token.user";
 
     /**
-     * http basic认证的header头前缀
+     * 给密码随机加盐的长度，固定为16
      */
-    public static final String AUTHORIZATION_BASIC = "Basic ";
-
-    public static final String REGEX_MOBILE = "";
+    public static final int PASSWORD_SALT_LENGTH = 16;
 
     /**
-     * 审核状态：1:未审核, 2:审核不通过, 3:审核通过
+     * 生成账号时，初始密码的长度(初始密码是随机的，后面用户必须要通过手机验证码进行修改)
      */
-    public static enum ReviewStatus {
-        UNREVIEWED, REVIEW_NOT_PASSED, REVIEW_PASSED;
-
-        public Integer getValue() {
-            return this.ordinal() + 1;
-        }
-    }
+    public static final int INITIAL_PASSWORD_LENGTH = 10;
 }

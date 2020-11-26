@@ -3,7 +3,6 @@ package com.elias.entity;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -35,19 +34,19 @@ public class AccessToken {
     /**
      * 令牌拥有者的id
      */
-    @Column(name = "`owner_id`", columnDefinition = "binary(16) comment '令牌的拥有者，可能是userId，也可能是clientId'")
+    @Column(name = "`owner_id`", columnDefinition = "binary(16) not null comment '令牌的拥有者，可能是userId，也可能是clientId'")
     private UUID ownerId;
 
     /**
      * 令牌的类型。1表示客户端令牌，2表示用户令牌
      */
-    @Column(name = "`owner_type`", columnDefinition = "tinyint unsigned comment '令牌拥有者的类型，1表示客户端令牌，2表示用户令牌'")
+    @Column(name = "`owner_type`", columnDefinition = "tinyint unsigned not null comment '令牌拥有者的类型，1表示客户端令牌，2表示用户令牌'")
     private Integer ownerType;
 
     /**
-     * 令牌的有效时间
+     * 令牌的有效时间---单位为毫秒
      */
-    @Column(name = "`expire`", nullable = false, columnDefinition = "mediumint unsigned comment '令牌的有效时间，单位: 秒'")
+    @Column(name = "`expire`", columnDefinition = "int unsigned not null comment '令牌的有效时间，单位: 毫秒'")
     private Integer expire;
 
     /**
@@ -55,8 +54,8 @@ public class AccessToken {
      */
     @Temporal(TemporalType.TIMESTAMP)
     @CreationTimestamp
-    @Column(name = "created_date", updatable = false, columnDefinition = "datetime comment '令牌的创建时间'")
-    private Date createdDate;
+    @Column(name = "create_time", updatable = false, columnDefinition = "datetime comment '令牌的创建时间'")
+    private Date createTime;
 
     public enum OwnerType {
         CLIENT(1), USER(2);
