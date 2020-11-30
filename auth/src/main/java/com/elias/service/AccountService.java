@@ -43,7 +43,7 @@ public class AccountService {
             // 然后对sha256加密后的结果加盐，再进行一次加密，得到存储到数据库中的密码
             account.setPassword(SecurityUtils.encrypt(rawPassword, salt));
             account = accountRepository.save(account);
-            log.info("为用户 [{}] 设置的初始密码是 [{}]", user.getId(), randomPassword);
+            log.info("为用户 [{}] 创建了账号 [{}], 初始密码是 [{}]", user.getId(), account.getId(), randomPassword);
         }
         return account;
     }

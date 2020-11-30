@@ -1,6 +1,6 @@
 package com.elias.reader.config;
 
-import com.elias.common.aop.LogAspect;
+import com.elias.common.aspects.LogAspect;
 import org.springframework.context.annotation.Bean;
 
 /**

@@ -26,11 +26,12 @@ public class UserLoginForm {
 
     /**
      * 登录的方式--目前只支持账号密码、手机号验证码两种登录方式
+     * 1表示账号密码登录，2表示验证码登录
      */
     @NotNull
     private Integer type;
 
-    public static enum LoginType {
+    public enum LoginTypeEnum {
         /**
          * 账号密码登录
          */
@@ -43,7 +44,7 @@ public class UserLoginForm {
 
         private final Integer type;
 
-        LoginType(Integer type) {
+        LoginTypeEnum(Integer type) {
             this.type = type;
         }
 
@@ -58,7 +59,7 @@ public class UserLoginForm {
          * @return boolean
          */
         public static boolean isSupported(int type) {
-            for (LoginType loginType : LoginType.values()) {
+            for (LoginTypeEnum loginType : LoginTypeEnum.values()) {
                 if (loginType.getType() == type) {
                     return true;
                 }

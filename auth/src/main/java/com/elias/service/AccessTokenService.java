@@ -50,7 +50,10 @@ public class AccessTokenService {
             accessToken.setOwnerId(ownerId);
             accessToken.setOwnerType(ownerType.getType());
             accessToken.setExpire(getTokenExpire(ownerType));
-            accessToken = accessTokenRepository.save(accessToken);
+            synchronized (AccessTokenService.class) {
+                AccessToken tmp = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
+                accessToken = tmp == null ? accessTokenRepository.save(accessToken) : tmp;
+            }
         }
         AccessTokenView view = new AccessTokenView();
         view.setId(accessToken.getId());
@@ -58,12 +61,31 @@ public class AccessTokenService {
         return view;
     }
 
+
+    /**
+     * 校验客户端令牌
+     *
+     * @param clientAccessToken 客户端访问令牌
+     */
+    public void validateClientAccessToken(UUID clientAccessToken) {
+        validateAccessToken(clientAccessToken, AccessToken.OwnerType.CLIENT.getType());
+    }
+
+    /**
+     * 校验用户令牌
+     *
+     * @param userAccessToken 用户访问令牌
+     */
+    public void validateUserAccessToken(UUID userAccessToken) {
+        validateAccessToken(userAccessToken, AccessToken.OwnerType.USER.getType());
+    }
+
     /**
      * 校验令牌的合法性。只有令牌能找到并且剩余生存时间大于0才是合法的令牌
      *
      * @param accessToken 令牌
      */
-    public void validateAccessToken(UUID accessToken) {
+    private AccessToken validateAccessToken(UUID accessToken) {
         AccessToken token = accessTokenRepository.findById(accessToken).orElse(null);
         if (token == null) {
             throw new RestException(ErrorCode.ACCESS_TOKEN_NOT_FOUND);
@@ -71,6 +93,22 @@ public class AccessTokenService {
         if (ttl(token) <= 0) {
             throw new RestException(ErrorCode.EXPIRED_ACCESS_TOKEN);
         }
+        return token;
+    }
+
+    /**
+     * 校验令牌的合法性以及令牌的类型
+     *
+     * @param accessToken 访问令牌
+     * @param type        令牌的类型
+     * @return 令牌
+     */
+    private AccessToken validateAccessToken(UUID accessToken, int type) {
+        AccessToken token = validateAccessToken(accessToken);
+        if (token.getOwnerType() != type) {
+            throw new RestException(ErrorCode.UNAUTHORIZED);
+        }
+        return token;
     }
 
     /**

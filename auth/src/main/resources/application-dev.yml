@@ -13,11 +13,7 @@ spring:
       hibernate:
         hbm2ddl:
           auto: update
-com:
-  elias:
-    auth:
-      token:
-        survive: 7200
-        leeway: 5
-
-# jpa配置
+  redis:
+    host: localhost
+    password: 123456
+    port: 6379

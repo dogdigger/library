@@ -40,6 +40,16 @@ public enum ErrorCode {
      */
     EXPIRED_VERIFY_CODE(HttpStatus.BAD_REQUEST, 10005, "the verify code has expired"),
 
+    /**
+     * 不支持的登录方式
+     */
+    UNSUPPORTED_LOGIN_TYPE(HttpStatus.BAD_REQUEST, 10006, "unsupported login type"),
+
+    /**
+     * 该手机号码还未进行注册
+     */
+    UNREGISTERED_MOBILE(HttpStatus.BAD_REQUEST, 10007, "the mobile has not been registered"),
+
 
     // ------------------------------------------- unauthorized(401): 20000 -------------------------------------------
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, 20000, "the request is unauthorized"),

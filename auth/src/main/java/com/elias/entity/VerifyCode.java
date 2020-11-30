@@ -25,16 +25,22 @@ public class VerifyCode implements Serializable {
     private Long id;
 
     /**
+     * 手机号码
+     */
+    @Column(name = "`mobile`", columnDefinition = "char(11) not null comment '手机号码'")
+    private String mobile;
+
+    /**
      * 验证码，固定为6位数字
      */
     @Column(name = "`code`", columnDefinition = "char(6) not null comment '验证码'")
     private String code;
 
     /**
-     * 手机号码
+     * 该验证码是否已被使用
      */
-    @Column(name = "`mobile`", columnDefinition = "char(11) not null comment '手机号码'")
-    private String mobile;
+    @Column(name = "`used`", columnDefinition = "bit(1) default false not null comment '是否已使用'")
+    private Boolean used = false;
 
     /**
      * 验证码的有效时间，单位是分钟，一般是10分钟

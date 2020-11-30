@@ -2,6 +2,7 @@ package com.elias.api.auth.client;
 
 import com.elias.config.PathDefinition;
 import com.elias.service.ClientService;
+import com.elias.service.UserService;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,11 +12,13 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>description: </p>
  */
 @RestController
-@RequestMapping(PathDefinition.URI_API_AUTH + "/client")
+@RequestMapping(PathDefinition.URI_API_CLIENT)
 public class ClientController {
     private final ClientService clientService;
+    private final UserService userService;
 
-    public ClientController(ClientService clientService) {
+    public ClientController(ClientService clientService, UserService userService) {
         this.clientService = clientService;
+        this.userService = userService;
     }
 }

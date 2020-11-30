@@ -1,6 +1,6 @@
-package com.elias.common.aop;
+package com.elias.common.aspects;
 
-import com.elias.common.exception.CommonModuleException;
+import com.elias.common.holder.HttpServletRequestHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -8,9 +8,6 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
@@ -29,14 +26,12 @@ public class LogAspect {
     private static final String TIME_IT_POINTCUT = "@annotation(com.elias.common.annotation.TimeIt)";
 
     @Around(LOG_IT_POINTCUT)
-    public Object logIt(ProceedingJoinPoint joinPoint) {
+    public Object logIt(ProceedingJoinPoint joinPoint) throws Throwable {
         Class declaringType = joinPoint.getSignature().getDeclaringType();
         if (declaringType.isAnnotationPresent(RestController.class) || declaringType.isAnnotationPresent(Controller.class)) {
-            RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-            if (requestAttributes != null) {
-                ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
-                HttpServletRequest request = servletRequestAttributes.getRequest();
-                StringBuilder builder = new StringBuilder();
+            HttpServletRequest request;
+            if ((request = HttpServletRequestHolder.getHttpServletRequest()) != null) {
+                StringBuilder builder = new StringBuilder(512);
                 builder.append("[Method=").append(request.getMethod()).
                         append(", User-Agent=").append(request.getHeader("User-Agent")).
                         append(", Remote-Address=").append(request.getRemoteAddr()).
@@ -50,31 +45,19 @@ public class LogAspect {
                 } else {
                     builder.append(", QueryString=").append(request.getQueryString());
                 }
-                log.info(builder.append("]").toString());
+                log.info(builder.append("] was called").toString());
             }
         }
-        String targetMethod = getTargetMethodName(joinPoint);
-        try {
-            return joinPoint.proceed();
-        } catch (Throwable throwable) {
-            log.error("serious error: " + throwable.getMessage());
-            return null;
-        }
+        return joinPoint.proceed();
     }
 
     @Around(TIME_IT_POINTCUT)
-    public Object timeIt(ProceedingJoinPoint joinPoint) {
+    public Object timeIt(ProceedingJoinPoint joinPoint) throws Throwable {
         long start = System.currentTimeMillis();
-        String targetMethod = getTargetMethodName(joinPoint);
-        try {
-            Object res = joinPoint.proceed();
-            long end = System.currentTimeMillis();
-            log.info("{} cost {}ms to execute......", targetMethod, end - start);
-            return res;
-        } catch (Throwable throwable) {
-            log.error("a serious error: " + throwable.getMessage() + " happened while execute: " + targetMethod);
-            throw new CommonModuleException(throwable.getMessage());
-        }
+        Object res = joinPoint.proceed();
+        long end = System.currentTimeMillis();
+        log.info("{} cost {}ms to execute......", getTargetMethodName(joinPoint), end - start);
+        return res;
     }
 
     private String getTargetMethodName(ProceedingJoinPoint joinPoint) {

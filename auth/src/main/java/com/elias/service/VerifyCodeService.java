@@ -35,7 +35,7 @@ public class VerifyCodeService {
      * @param mobile 手机号码
      * @return 生成的验证码。{@link VerifyCode}
      */
-    public VerifyCode generateVerifyCode(String mobile) {
+    public VerifyCode createVerifyCode(String mobile) {
         List<VerifyCode> verifyCodes = verifyCodeRepository.findAllByMobile(mobile).stream().filter(r -> !isVerifyCodeExpired(r)).collect(Collectors.toList());
         String code = CommonUtils.generateRandomNumberString(6);
         if (!verifyCodes.isEmpty()) {
@@ -58,7 +58,6 @@ public class VerifyCodeService {
         verifyCode.setMobile(mobile);
         verifyCode.setCode(code);
         verifyCode.setExpire(10);
-        log.info("为手机号码 [{}] 生成的验证码是 [{}] ", mobile, code);
         return verifyCodeRepository.save(verifyCode);
     }
 
