@@ -1,8 +1,8 @@
 package com.elias.api.auth.token;
 
 import com.elias.common.annotation.ValidRequestHeader;
-import com.elias.config.Constants;
-import com.elias.config.PathDefinition;
+import com.elias.common.Constants;
+import com.elias.common.PathDefinition;
 import com.elias.entity.AccessToken;
 import com.elias.exception.ErrorCode;
 import com.elias.exception.RestException;

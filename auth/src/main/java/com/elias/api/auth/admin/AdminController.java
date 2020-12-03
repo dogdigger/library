@@ -1,6 +1,6 @@
 package com.elias.api.auth.admin;
 
-import com.elias.config.PathDefinition;
+import com.elias.common.PathDefinition;
 import com.elias.model.form.admin.ClientCreateForm;
 import com.elias.model.view.ClientView;
 import com.elias.response.GenericResponse;

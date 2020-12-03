@@ -1,4 +1,4 @@
-package com.elias.config;
+package com.elias.common;
 
 /**
  * @author chengrui

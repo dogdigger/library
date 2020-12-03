@@ -1,16 +1,17 @@
 package com.elias.reader.controller;
 
-import com.elias.book.entity.Book;
-import com.elias.common.annotation.LogIt;
-import com.elias.common.response.Response;
+import com.elias.reader.service.AddPersonForm;
+import com.elias.reader.service.Person;
 import com.elias.reader.service.ReaderService;
-import com.elias.reader.service.TestService;
+import com.elias.reader.service.UpdatePersonForm;
+import com.elias.reader.util.CommonUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import javax.validation.Valid;
+import java.util.List;
+
 
 /**
  * @author chengrui
@@ -18,7 +19,7 @@ import java.io.IOException;
  * <p>description: </p>
  */
 @RestController
-@RequestMapping("/api/reader")
+@RequestMapping("/api/persons")
 public class ReaderController {
     private final ReaderService readerService;
 
@@ -27,35 +28,34 @@ public class ReaderController {
         this.readerService = readerService;
     }
 
-    @LogIt
-    @GetMapping("/book/search")
-    public Response<Book> searchBook(@RequestParam(name = "category") String category, HttpServletResponse response){
-        try{
-            response.sendRedirect("http://www.baidu.com");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return Response.ok(this.readerService.searchBook(category));
+    @GetMapping("/{id}")
+    public Person getPerson(@PathVariable String id) {
+        return readerService.getPerson(id);
     }
 
-    @LogIt
-    @PostMapping("/book")
-    public Response<Book> addBook(@RequestBody Book book){
-        return Response.ok(this.readerService.addBook(book));
+    @GetMapping
+    public List<Person> getAllPerson() {
+        return readerService.getAllPerson();
     }
 
-    @RequestMapping("/redirect")
-    public void redirect(HttpServletResponse response){
-        try{
-            response.sendRedirect("http://www.baidu.com");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    @PostMapping
+    public Person addPerson(@RequestBody @Valid AddPersonForm addPersonForm) {
+        Person p = new Person();
+        BeanUtils.copyProperties(addPersonForm, p);
+        p.setId(CommonUtils.generateRandomString(6));
+        readerService.addPerson(p);
+        return p;
     }
 
-    @GetMapping("/hello")
-    public String hello(){
-        return new TestService().sayHello();
+    @DeleteMapping("/{id}")
+    public Person removePerson(@PathVariable String id) {
+        return readerService.removePerson(id);
     }
 
+    @PutMapping
+    public Person updatePerson(@RequestBody @Valid UpdatePersonForm updatePersonForm) {
+        Person p = new Person();
+        BeanUtils.copyProperties(updatePersonForm, p);
+        return readerService.updatePerson(p);
+    }
 }

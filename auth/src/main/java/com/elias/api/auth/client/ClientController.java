@@ -1,6 +1,6 @@
 package com.elias.api.auth.client;
 
-import com.elias.config.PathDefinition;
+import com.elias.common.PathDefinition;
 import com.elias.service.ClientService;
 import com.elias.service.UserService;
 import org.springframework.web.bind.annotation.RequestMapping;

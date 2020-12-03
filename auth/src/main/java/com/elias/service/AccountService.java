@@ -1,6 +1,6 @@
 package com.elias.service;
 
-import com.elias.config.Constants;
+import com.elias.common.Constants;
 import com.elias.entity.Account;
 import com.elias.entity.User;
 import com.elias.repository.AccountRepository;

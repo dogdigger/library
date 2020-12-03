@@ -1,6 +1,6 @@
 package com.elias.util;
 
-import com.elias.config.Constants;
+import com.elias.common.Constants;
 import com.elias.exception.ErrorCode;
 import com.elias.exception.RestException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;

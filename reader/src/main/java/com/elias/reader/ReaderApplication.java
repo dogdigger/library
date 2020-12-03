@@ -2,6 +2,7 @@ package com.elias.reader;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.ImportResource;
 
 /**
@@ -10,7 +11,8 @@ import org.springframework.context.annotation.ImportResource;
  * <p>description: </p>
  */
 @SpringBootApplication
-@ImportResource({"classpath:dubbo-consumer.xml"})
+// @ImportResource({"classpath:dubbo-consumer.xml"})
+@EnableCaching
 public class ReaderApplication {
     public static void main(String[] args) {
         SpringApplication.run(ReaderApplication.class, args);

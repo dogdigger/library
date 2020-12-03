@@ -1,6 +1,6 @@
 package com.elias.model.form.user;
 
-import com.elias.config.Constants;
+import com.elias.common.Constants;
 import lombok.Data;
 
 import javax.validation.constraints.*;

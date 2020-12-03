@@ -1,6 +1,7 @@
 package com.elias.service;
 
-import com.elias.config.Constants;
+import com.elias.common.Constants;
+import com.elias.common.cache.RedisCacheOperator;
 import com.elias.entity.AccessToken;
 import com.elias.exception.ErrorCode;
 import com.elias.exception.RestException;
@@ -22,11 +23,17 @@ import java.util.UUID;
 public class AccessTokenService {
     private final AccessTokenRepository accessTokenRepository;
     private final Environment env;
+    // auth:accessToken:令牌类型:令牌拥有者
+    private final String KEY = "auth:accessToken:%s:%s";
+
+    private final RedisCacheOperator redisCacheOperator;
 
     @Autowired
-    public AccessTokenService(AccessTokenRepository accessTokenRepository, Environment env) {
+    public AccessTokenService(AccessTokenRepository accessTokenRepository, Environment env,
+                              RedisCacheOperator redisCacheOperator) {
         this.accessTokenRepository = accessTokenRepository;
         this.env = env;
+        this.redisCacheOperator = redisCacheOperator;
     }
 
     /**
@@ -38,7 +45,17 @@ public class AccessTokenService {
      * @return {@link AccessTokenView}
      */
     public AccessTokenView getToken(UUID ownerId, AccessToken.OwnerType ownerType) {
-        AccessToken accessToken = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
+        // 先查询redis
+        AccessToken accessToken = (AccessToken) redisCacheOperator.valueOperations().get(String.format(KEY, ownerType.getType(), ownerId));
+        // 如果redis中没有，则查询数据库
+        if (accessToken == null) {
+            accessToken = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
+            // 如果数据库中也没有，就新建一个
+            if (accessToken == null) {
+
+            }
+        }
+
         if (accessToken != null && ttl(accessToken) < (accessToken.getExpire() >> 2)) {
             // 如果令牌剩余生存时间不足1/4，就删除令牌然后创建一个新的令牌 --- 惰性删除
             accessTokenRepository.delete(accessToken);

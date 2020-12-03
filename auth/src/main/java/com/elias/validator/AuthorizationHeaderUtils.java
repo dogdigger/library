@@ -2,7 +2,7 @@ package com.elias.validator;
 
 import com.elias.common.exception.BadRequestHeaderException;
 import com.elias.common.exception.RequestHeaderNotFoundException;
-import com.elias.config.Constants;
+import com.elias.common.Constants;
 
 import java.util.UUID;
 
