@@ -23,9 +23,6 @@ import java.util.UUID;
 public class AccessTokenService {
     private final AccessTokenRepository accessTokenRepository;
     private final Environment env;
-    // auth:accessToken:令牌类型:令牌拥有者
-    private final String KEY = "auth:accessToken:%s:%s";
-
     private final RedisCacheOperator redisCacheOperator;
 
     @Autowired
@@ -45,14 +42,30 @@ public class AccessTokenService {
      * @return {@link AccessTokenView}
      */
     public AccessTokenView getToken(UUID ownerId, AccessToken.OwnerType ownerType) {
+        // 调用该方法的地方，需要校验ownerId是否是一个真实存在的
+        String redisKey = Constants.REDIS_KEY_ACCESS_TOKEN;
         // 先查询redis
-        AccessToken accessToken = (AccessToken) redisCacheOperator.valueOperations().get(String.format(KEY, ownerType.getType(), ownerId));
+        AccessToken accessToken = (AccessToken) redisCacheOperator.hashOperations().get(redisKey, ownerId);
         // 如果redis中没有，则查询数据库
         if (accessToken == null) {
             accessToken = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
-            // 如果数据库中也没有，就新建一个
+            // 如果数据库中也没有，就尝试新建一个
             if (accessToken == null) {
-
+                // 获取分布式锁
+                boolean acquired = redisCacheOperator.getDistributedLock();
+                // 如果获取成功，则写入数据
+                if (acquired) {
+                    accessToken = new AccessToken();
+                    accessToken.setOwnerId(ownerId);
+                    accessToken.setOwnerType(ownerType.getType());
+                    accessToken.setExpire(getTokenExpire(ownerType));
+                    // 写入数据库
+                    accessToken = accessTokenRepository.save(accessToken);
+                    // 写入redis
+                    redisCacheOperator.hashOperations().put(redisKey, ownerId, accessToken);
+                    // 设置过期时间
+                    redisCacheOperator.expire(redisKey, );
+                }
             }
         }
 
@@ -137,9 +150,9 @@ public class AccessTokenService {
     private int getTokenExpire(AccessToken.OwnerType ownerType) {
         String expireFromEnv;
         if (ownerType.getType() == AccessToken.OwnerType.CLIENT.getType()) {
-            expireFromEnv = env.getProperty(Constants.CLIENT_TOKEN_EXPIRE_KEY);
+            expireFromEnv = env.getProperty(Constants.ENV_CLIENT_TOKEN_EXPIRE_KEY);
         } else if (ownerType.getType() == AccessToken.OwnerType.USER.getType()) {
-            expireFromEnv = env.getProperty(Constants.USER_TOKEN_EXPIRE_KEY);
+            expireFromEnv = env.getProperty(Constants.ENV_USER_TOKEN_EXPIRE_KEY);
         } else {
             throw new RestException(ErrorCode.UNSUPPORTED_TOKEN_TYPE);
         }

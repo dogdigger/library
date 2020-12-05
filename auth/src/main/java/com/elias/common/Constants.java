@@ -14,9 +14,24 @@ public final class Constants {
 
     public static final String HEADER_AUTHORIZATION_BASIC_PREFIX = "Basic ";
 
-    public static final String CLIENT_TOKEN_EXPIRE_KEY = "expire.token.client";
+    public static final String ENV_CLIENT_TOKEN_EXPIRE_KEY = "expire.token.client";
 
-    public static final String USER_TOKEN_EXPIRE_KEY = "expire.token.user";
+    public static final String ENV_USER_TOKEN_EXPIRE_KEY = "expire.token.user";
+
+    /**
+     * 访问令牌在redis中的哈希key
+     */
+    public static final String REDIS_KEY_ACCESS_TOKEN = "auth:accessToken";
+
+    /**
+     * 分布式锁在redis中的key
+     */
+    public static final String REDIS_KEY_DISTRIBUTED_LOCK = "auth:lock";
+
+    /**
+     * 分布式锁的过期时间，单位毫秒
+     */
+    public static final long DISTRIBUTED_LOCK_EXPIRE = 2000;
 
     /**
      * 给密码随机加盐的长度，固定为16
