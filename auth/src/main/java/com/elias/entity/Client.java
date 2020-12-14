@@ -18,7 +18,7 @@ import java.util.UUID;
 @Entity
 @Data
 @Table(name = "t_client_info", indexes = {
-        @Index(name = "idx_name", columnList = "`name`")
+        @Index(name = "idx_name_unique", columnList = "`name`", unique = true)
 })
 public class Client implements Serializable {
 
@@ -31,7 +31,7 @@ public class Client implements Serializable {
     private UUID id;
 
     /**
-     * 客户端名称--由业务来保证唯一性
+     * 客户端名称，唯一
      */
     @Column(name = "`name`", nullable = false, columnDefinition = "varchar(50) comment '客户端名称'")
     private String name;

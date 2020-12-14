@@ -7,12 +7,15 @@ import com.elias.exception.ErrorCode;
 import com.elias.exception.RestException;
 import com.elias.model.view.AccessTokenView;
 import com.elias.repository.AccessTokenRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author chengrui
@@ -20,10 +23,24 @@ import java.util.UUID;
  * <p>description: </p>
  */
 @Service
+@Slf4j
 public class AccessTokenService {
     private final AccessTokenRepository accessTokenRepository;
     private final Environment env;
     private final RedisCacheOperator redisCacheOperator;
+
+    private static volatile boolean hasDelete = false;
+
+    /**
+     * 分布式锁在redis中的key
+     */
+    private static final String REDIS_KEY_DISTRIBUTED_LOCK = "auth:token:lock";
+
+    /**
+     * 令牌在redis中的key，第一个占位符标识令牌的类型，第二个占位符标识令牌id
+     */
+    private static final String REDIS_KEY_DATA = "auth:token:%s:%s";
+
 
     @Autowired
     public AccessTokenService(AccessTokenRepository accessTokenRepository, Environment env,
@@ -34,134 +51,90 @@ public class AccessTokenService {
     }
 
     /**
-     * 获取令牌。注意：重复获取不一定会生成新的令牌。
-     * 令牌的刷新机制：当令牌的剩余生存时间小于令牌寿命的1/4时会刷新令牌
+     * 获取令牌。注意：重复获取不会生成新的令牌，除非令牌已过期
+     * 调用该方法的地方需要自行判断 ownerId 是否是真实存在于本系统的client或user
      *
      * @param ownerId   令牌的接受者id，可能是一个client，也可能是一个user
      * @param ownerType 接受者的类型
      * @return {@link AccessTokenView}
      */
-    public AccessTokenView getToken(UUID ownerId, AccessToken.OwnerType ownerType) {
-        // 调用该方法的地方，需要校验ownerId是否是一个真实存在的
-        String redisKey = Constants.REDIS_KEY_ACCESS_TOKEN;
-        // 先查询redis
-        AccessToken accessToken = (AccessToken) redisCacheOperator.hashOperations().get(redisKey, ownerId);
-        // 如果redis中没有，则查询数据库
-        if (accessToken == null) {
-            accessToken = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
-            // 如果数据库中也没有，就尝试新建一个
-            if (accessToken == null) {
-                // 获取分布式锁
-                boolean acquired = redisCacheOperator.getDistributedLock();
-                // 如果获取成功，则写入数据
-                if (acquired) {
-                    accessToken = new AccessToken();
-                    accessToken.setOwnerId(ownerId);
-                    accessToken.setOwnerType(ownerType.getType());
-                    accessToken.setExpire(getTokenExpire(ownerType));
-                    // 写入数据库
-                    accessToken = accessTokenRepository.save(accessToken);
-                    // 写入redis
-                    redisCacheOperator.hashOperations().put(redisKey, ownerId, accessToken);
-                    // 设置过期时间
-                    redisCacheOperator.expire(redisKey, );
-                }
-            }
-        }
-
-        if (accessToken != null && ttl(accessToken) < (accessToken.getExpire() >> 2)) {
-            // 如果令牌剩余生存时间不足1/4，就删除令牌然后创建一个新的令牌 --- 惰性删除
-            accessTokenRepository.delete(accessToken);
-            accessToken = null;
-        }
-        // 创建新的令牌
-        if (accessToken == null) {
+    public AccessToken getToken(UUID ownerId, AccessToken.OwnerType ownerType) {
+        AccessToken accessToken = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
+        if (accessToken == null || ttl(accessToken) <= 0) {
+            AccessToken tmp = accessToken;
             accessToken = new AccessToken();
             accessToken.setOwnerId(ownerId);
             accessToken.setOwnerType(ownerType.getType());
             accessToken.setExpire(getTokenExpire(ownerType));
-            synchronized (AccessTokenService.class) {
-                AccessToken tmp = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
-                accessToken = tmp == null ? accessTokenRepository.save(accessToken) : tmp;
+            // 获取分布式锁
+            redisCacheOperator.acquireLock(REDIS_KEY_DISTRIBUTED_LOCK, Constants.DISTRIBUTED_LOCK_EXPIRE, TimeUnit.MILLISECONDS);
+            if (tmp != null && !hasDelete) {
+                accessTokenRepository.delete(tmp);
+                hasDelete = true;
+            } else {
+                hasDelete = false;
             }
+            AccessToken token = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
+            accessToken = token == null ? accessTokenRepository.save(accessToken) : token;
+            // 手动释放分布式锁
+            redisCacheOperator.delete(REDIS_KEY_DISTRIBUTED_LOCK);
+            // 如果不在redis中，就放入redis
+            String key = String.format(REDIS_KEY_DATA, ownerType.getType(), accessToken.getId());
+            redisCacheOperator.setIfAbsentAndExpireRandom(key, accessToken, accessToken.getExpire(), TimeUnit.MILLISECONDS);
         }
-        AccessTokenView view = new AccessTokenView();
-        view.setId(accessToken.getId());
-        view.setTtl(ttl(accessToken));
-        return view;
+        return accessToken;
     }
 
-
-    /**
-     * 校验客户端令牌
-     *
-     * @param clientAccessToken 客户端访问令牌
-     */
-    public void validateClientAccessToken(UUID clientAccessToken) {
-        validateAccessToken(clientAccessToken, AccessToken.OwnerType.CLIENT.getType());
-    }
-
-    /**
-     * 校验用户令牌
-     *
-     * @param userAccessToken 用户访问令牌
-     */
-    public void validateUserAccessToken(UUID userAccessToken) {
-        validateAccessToken(userAccessToken, AccessToken.OwnerType.USER.getType());
-    }
 
     /**
      * 校验令牌的合法性。只有令牌能找到并且剩余生存时间大于0才是合法的令牌
      *
      * @param accessToken 令牌
+     * @param ownerType   令牌的类型 {@link AccessToken.OwnerType}
      */
-    private AccessToken validateAccessToken(UUID accessToken) {
-        AccessToken token = accessTokenRepository.findById(accessToken).orElse(null);
+    public AccessToken isValid(UUID accessToken, AccessToken.OwnerType ownerType) {
+        // 先查询redis
+        String key = String.format(REDIS_KEY_DATA, ownerType.getType(), accessToken);
+        AccessToken token = (AccessToken) redisCacheOperator.valueOperations().get(key);
         if (token == null) {
-            throw new RestException(ErrorCode.ACCESS_TOKEN_NOT_FOUND);
-        }
-        if (ttl(token) <= 0) {
-            throw new RestException(ErrorCode.EXPIRED_ACCESS_TOKEN);
-        }
-        return token;
-    }
-
-    /**
-     * 校验令牌的合法性以及令牌的类型
-     *
-     * @param accessToken 访问令牌
-     * @param type        令牌的类型
-     * @return 令牌
-     */
-    private AccessToken validateAccessToken(UUID accessToken, int type) {
-        AccessToken token = validateAccessToken(accessToken);
-        if (token.getOwnerType() != type) {
-            throw new RestException(ErrorCode.UNAUTHORIZED);
+            token = accessTokenRepository.findById(accessToken).orElse(null);
+            if (token == null) {
+                throw new RestException(ErrorCode.ACCESS_TOKEN_NOT_FOUND);
+            }
+            int ttl = ttl(token);
+            if (ttl <= 0) {
+                throw new RestException(ErrorCode.UNAUTHORIZED);
+            }
+            redisCacheOperator.valueOperations().setIfAbsent(key, token, ttl, TimeUnit.MILLISECONDS);
         }
         return token;
     }
 
+
     /**
-     * 决定令牌的有效期。优先从配置文件中获取，如果配置文件中没有，就使用默认的
+     * 返回令牌的有效时间。优先从配置文件中获取，如果配置文件中没有，就使用默认的。单位为毫秒
      *
      * @param ownerType 令牌的类型，{@link AccessToken.OwnerType}
      * @return 令牌的有效期
      */
     private int getTokenExpire(AccessToken.OwnerType ownerType) {
-        String expireFromEnv;
+        String configurationItemName;
         if (ownerType.getType() == AccessToken.OwnerType.CLIENT.getType()) {
-            expireFromEnv = env.getProperty(Constants.ENV_CLIENT_TOKEN_EXPIRE_KEY);
+            configurationItemName = Constants.ENV_CLIENT_TOKEN_EXPIRE_KEY;
         } else if (ownerType.getType() == AccessToken.OwnerType.USER.getType()) {
-            expireFromEnv = env.getProperty(Constants.ENV_USER_TOKEN_EXPIRE_KEY);
+            configurationItemName = Constants.ENV_USER_TOKEN_EXPIRE_KEY;
         } else {
             throw new RestException(ErrorCode.UNSUPPORTED_TOKEN_TYPE);
         }
-        if (expireFromEnv != null) {
+        String item = env.getProperty(configurationItemName);
+        if (!StringUtils.isEmpty(item)) {
             try {
-                return Integer.parseInt(expireFromEnv);
+                return Integer.parseInt(item);
             } catch (NumberFormatException e) {
-                throw new RestException(ErrorCode.WRONG_CONFIGURATION_ITEM);
+                log.error("配置项 [{}] 错误: 无法被解析成整数", configurationItemName);
             }
+        } else {
+            log.warn("找不到配置项 [{}]: 使用默认配置", configurationItemName);
         }
         // 默认客户端令牌有效时长为7天，用户令牌为2小时
         return ownerType.getType() == AccessToken.OwnerType.CLIENT.getType() ? 604800000 : 7200000;
@@ -173,7 +146,30 @@ public class AccessTokenService {
      * @param accessToken 令牌
      * @return 该令牌的剩余生存时间毫秒值
      */
-    private int ttl(AccessToken accessToken) {
+    public static int ttl(AccessToken accessToken) {
         return (int) (accessToken.getCreateTime().getTime() + accessToken.getExpire() - new Date().getTime());
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread t1 = new Thread(() -> {
+            int sum = 0;
+            for (int i = 0; i < 100; i += 2) {
+                sum += i;
+            }
+            System.out.println(Thread.currentThread().getName() + ": sum is " + sum);
+        });
+
+        Thread t2 = new Thread(() -> {
+            int sum = 0;
+            for (int i = 1; i < 100; i += 2) {
+                sum += i;
+            }
+            System.out.println(Thread.currentThread().getName() + ": sum is " + sum);
+        });
+        t1.start();
+        t1.join(); // 等待t1线程执行完毕
+        t2.start();
+        t2.join(); // 等待t2线程执行完毕
+        System.out.println("main thread: end");
     }
 }

@@ -1,5 +1,7 @@
 package com.elias.service;
 
+import com.elias.common.Constants;
+import com.elias.common.cache.RedisCacheOperator;
 import com.elias.entity.VerifyCode;
 import com.elias.exception.ErrorCode;
 import com.elias.exception.RestException;
@@ -9,9 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * @author chengrui
@@ -23,9 +23,16 @@ import java.util.stream.Collectors;
 public class VerifyCodeService {
 
     private final VerifyCodeRepository verifyCodeRepository;
+    private final RedisCacheOperator redisCacheOperator;
 
-    public VerifyCodeService(VerifyCodeRepository verifyCodeRepository) {
+    /**
+     * 分布式锁在redis中的key
+     */
+    private static final String REDIS_KEY_DISTRIBUTED_LOCK = "auth:verify_code:lock";
+
+    public VerifyCodeService(VerifyCodeRepository verifyCodeRepository, RedisCacheOperator redisCacheOperator) {
         this.verifyCodeRepository = verifyCodeRepository;
+        this.redisCacheOperator = redisCacheOperator;
     }
 
     /**
@@ -36,29 +43,24 @@ public class VerifyCodeService {
      * @return 生成的验证码。{@link VerifyCode}
      */
     public VerifyCode createVerifyCode(String mobile) {
-        List<VerifyCode> verifyCodes = verifyCodeRepository.findAllByMobile(mobile).stream().filter(r -> !isVerifyCodeExpired(r)).collect(Collectors.toList());
+        // 生成一个mobile没有使用过的验证码
         String code = CommonUtils.generateRandomNumberString(6);
-        if (!verifyCodes.isEmpty()) {
-            // 死循环的方式来保证生成的验证码不和之前的重复
-            while (true) {
-                boolean duplicate = false;
-                for (VerifyCode verifyCode : verifyCodes) {
-                    if (verifyCode.getCode().equals(code)) {
-                        duplicate = true;
-                        break;
-                    }
-                }
-                if (!duplicate) {
-                    break;
-                }
-                code = CommonUtils.generateRandomNumberString(6);
-            }
-        }
         VerifyCode verifyCode = new VerifyCode();
         verifyCode.setMobile(mobile);
-        verifyCode.setCode(code);
         verifyCode.setExpire(10);
-        return verifyCodeRepository.save(verifyCode);
+        // 获取分布式锁
+        redisCacheOperator.acquireLock(REDIS_KEY_DISTRIBUTED_LOCK, Constants.DISTRIBUTED_LOCK_EXPIRE, TimeUnit.MILLISECONDS);
+        VerifyCode v;
+        while ((v = verifyCodeRepository.findByMobileAndCode(mobile, code)) != null && ttl(v) > 0) {
+            code = CommonUtils.generateRandomNumberString(6);
+        }
+        verifyCode.setCode(code);
+        verifyCode = verifyCodeRepository.save(verifyCode);
+        // 释放锁
+        redisCacheOperator.delete(REDIS_KEY_DISTRIBUTED_LOCK);
+        redisCacheOperator.valueOperations().setIfAbsent(code, verifyCode, 10, TimeUnit.MINUTES);
+        log.info("为手机号 [{}] 生成的验证码是 [{}]", mobile, verifyCode);
+        return verifyCode;
     }
 
     /**
@@ -68,23 +70,34 @@ public class VerifyCodeService {
      * @param code   验证码
      */
     public void validateVerifyCode(String mobile, String code) {
-        VerifyCode verifyCode = verifyCodeRepository.findByMobileAndCode(mobile, code);
-        if (verifyCode == null) {
-            throw new RestException(ErrorCode.VERIFY_CODE_NOT_FOUND);
+        VerifyCode verifyCode = (VerifyCode) redisCacheOperator.valueOperations().get(code);
+        if (verifyCode != null) {
+            if (!mobile.equals(verifyCode.getMobile())) {
+                throw new RestException(ErrorCode.WRONG_VERIFY_CODE);
+            }
+            return;
         }
-        if (isVerifyCodeExpired(verifyCode)) {
+        verifyCode = verifyCodeRepository.findByMobileAndCode(mobile, code);
+        if (verifyCode == null) {
+            throw new RestException(ErrorCode.WRONG_VERIFY_CODE);
+        }
+        long ttl = ttl(verifyCode);
+        if (ttl <= 0) {
             throw new RestException(ErrorCode.EXPIRED_VERIFY_CODE);
         }
+        redisCacheOperator.valueOperations().setIfAbsent(code, verifyCode, ttl, TimeUnit.MILLISECONDS);
     }
 
     /**
-     * 判断验证码是否已过期
+     * 返回验证码的剩余有效时间，单位为毫秒
      *
      * @param verifyCode 验证码实体对象
-     * @return 是否已过期
+     * @return 剩余有效时间
      */
-    private boolean isVerifyCodeExpired(VerifyCode verifyCode) {
-        return CommonUtils.dateAdd(verifyCode.getCreateTime(), TimeUnit.MINUTES, verifyCode.getExpire()).before(new Date());
+    private long ttl(VerifyCode verifyCode) {
+        long timestamp = System.currentTimeMillis();
+        Date dt = CommonUtils.dateAdd(verifyCode.getCreateTime(), TimeUnit.MINUTES, verifyCode.getExpire());
+        return timestamp - dt.getTime();
     }
 
 }

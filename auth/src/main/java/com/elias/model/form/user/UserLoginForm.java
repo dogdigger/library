@@ -66,5 +66,14 @@ public class UserLoginForm {
             }
             return false;
         }
+
+        public static LoginTypeEnum loginTypeEnum(int loginType) {
+            for (LoginTypeEnum typeEnum : LoginTypeEnum.values()) {
+                if (loginType == typeEnum.type) {
+                    return typeEnum;
+                }
+            }
+            return null;
+        }
     }
 }

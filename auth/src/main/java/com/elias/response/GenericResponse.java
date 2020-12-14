@@ -13,18 +13,30 @@ public class GenericResponse<T> {
     private final String message;
     private T data = null;
 
-    public GenericResponse(String code, String message) {
+    private GenericResponse(String code, String message) {
         this.code = code;
         this.message = message;
     }
 
-    public GenericResponse(String code, String message, T data) {
+    private GenericResponse(String code, String message, T data) {
         this.code = code;
         this.message = message;
         this.data = data;
     }
 
-    public GenericResponse(T data) {
+    private GenericResponse(T data) {
         this("200", "ok", data);
+    }
+
+    public static <T> GenericResponse<T> success(T data) {
+        return new GenericResponse<>(data);
+    }
+
+    public static <T> GenericResponse<T> response(String code, String message) {
+        return new GenericResponse<>(code, message);
+    }
+
+    public static <T> GenericResponse<T> response(String code, String message, T data) {
+        return new GenericResponse<>(code, message, data);
     }
 }

@@ -36,11 +36,11 @@ public class VerifyCode implements Serializable {
     @Column(name = "`code`", columnDefinition = "char(6) not null comment '验证码'")
     private String code;
 
-    /**
-     * 该验证码是否已被使用
-     */
-    @Column(name = "`used`", columnDefinition = "bit(1) default false not null comment '是否已使用'")
-    private Boolean used = false;
+//    /**
+//     * 该验证码是否已被使用
+//     */
+//    @Column(name = "`used`", columnDefinition = "bit(1) default false not null comment '是否已使用'")
+//    private Boolean used = false;
 
     /**
      * 验证码的有效时间，单位是分钟，一般是10分钟

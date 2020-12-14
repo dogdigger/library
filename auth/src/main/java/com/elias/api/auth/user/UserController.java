@@ -50,7 +50,7 @@ public class UserController {
         User user = userService.createUser(userRegistrationForm);
         // 2、创建account
         accountService.createAccount(user);
-        return new GenericResponse<>(null);
+        return GenericResponse.success(null);
     }
 
     /**
@@ -74,7 +74,6 @@ public class UserController {
         // 3、生成验证码
         VerifyCode verifyCode = verifyCodeService.createVerifyCode(mobile);
         // 4、发送验证码
-        log.info("为手机号码 [{}] 生成的验证码是 [{}]", mobile, verifyCode.getCode());
-        return new GenericResponse<>(verifyCode.getCode());
+        return GenericResponse.success(verifyCode.getCode());
     }
 }

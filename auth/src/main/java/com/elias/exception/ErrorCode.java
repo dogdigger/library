@@ -46,18 +46,46 @@ public enum ErrorCode {
     UNSUPPORTED_LOGIN_TYPE(HttpStatus.BAD_REQUEST, 10006, "unsupported login type"),
 
     /**
-     * 该手机号码还未进行注册
+     * 手机号码还未进行注册
      */
     UNREGISTERED_MOBILE(HttpStatus.BAD_REQUEST, 10007, "the mobile has not been registered"),
 
+    /**
+     * 手机号码已被注册
+     */
+    REGISTERED_MOBILE(HttpStatus.BAD_REQUEST, 10008, "the mobile has been registered"),
+
+    /**
+     * 邮箱已被注册
+     */
+    REGISTERED_EMAIL(HttpStatus.BAD_REQUEST, 10009, "the email has been registered"),
+
+    /**
+     * 业务逻辑错误
+     */
+    BUSINESS_LOGIC_ERROR(HttpStatus.BAD_REQUEST, 10010, "business logic error, please contact the system admin"),
+
+    /**
+     * 验证码错误
+     */
+    WRONG_VERIFY_CODE(HttpStatus.BAD_REQUEST, 10011, "wrong verify code"),
+
+    /**
+     * 重复注册
+     */
+    DUPLICATE_REGISTRATION(HttpStatus.BAD_REQUEST, 10012, "duplicate registraction"),
+
 
     // ------------------------------------------- unauthorized(401): 20000 -------------------------------------------
+    /**
+     * 未授权，也就是令牌已过期
+     */
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, 20000, "the request is unauthorized"),
 
     /**
-     * 令牌已过期
+     * 令牌类型不匹配
      */
-    EXPIRED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, 20001, "the accessToken has expired"),
+    MISMATCHED_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, 20001, "mismatched token type"),
 
 
     // ------------------------------------------- forbidden(403): 30000 -------------------------------------------
@@ -82,6 +110,13 @@ public enum ErrorCode {
      * 不存在的手机验证码
      */
     VERIFY_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, 40003, "Nonexistent verifyCode"),
+
+    /**
+     * 不存在的用户：根据手机号和邮箱都找不到
+     */
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, 40004, "user not found"),
+
+    ACCOUNT_NOT_FOUNT(HttpStatus.NOT_FOUND, 40005, "account not found"),
 
 
     // ----------------------------------------- internal error(500): 50000 ----------------------------------------
