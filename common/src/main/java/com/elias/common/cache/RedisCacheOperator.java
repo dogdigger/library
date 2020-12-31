@@ -15,6 +15,11 @@ import java.util.concurrent.TimeUnit;
  * <p>description: </p>
  */
 public class RedisCacheOperator {
+    /**
+     * 随机过期时间毫秒值
+     */
+    private final static long RANDOM_EXPIRE_MILLIS = 60000;
+
     private final RedisTemplate<String, Object> redisTemplate;
 
     public RedisCacheOperator(RedisTemplate<String, Object> redisTemplate) {
@@ -41,38 +46,9 @@ public class RedisCacheOperator {
         redisTemplate.expire(key, timeout, timeUnit);
     }
 
-    /**
-     * 非阻塞式的获取分布式锁。这个方法要求 spring-data-redis 的版本不低于2.1，因为
-     * setIfAbsent(K key, V value, long timeout, TimeUnit unit) 是在2.1版本中新增的。早期版本中的setIfAbsent无法同时设置过期时间，
-     * 若先使用setIfAbsent，再使用expire设置键的过期时间，会产生死锁的风险:
-     * 如果setIfAbsent之后，线程挂掉了，那么这个锁就会一直存在，其他的线程就永远也拿不到锁了，所以必须要保证setIfAbsent和expire
-     * 这两个操作的原子性。redisTemplate中并没有这样的方法，但是jedis中是有这样的方法。
-     * <p>
-     * 手动释放锁可以通过 delete(lockName) 来实现
-     *
-     * @param lockName 锁在redis中的key
-     * @param timeout  锁的有效时间
-     * @param timeUnit 时间的单位
-     * @return 一个boolean值，表示是否获取成功
-     */
-    public boolean tryAcquireLock(String lockName, long timeout, TimeUnit timeUnit) {
-        Boolean acquire = redisTemplate.opsForValue().setIfAbsent(lockName, "", timeout, timeUnit);
-        return acquire != null && acquire;
-    }
 
-    /**
-     * 阻塞式的获取分布式锁
-     *
-     * @param lockName 锁在redis中的key
-     * @param timeout  锁的有效时间
-     * @param timeUnit 时间的单位
-     */
-    public void acquireLock(String lockName, long timeout, TimeUnit timeUnit) {
-        boolean acquired = false;
-        while (!acquired) {
-            acquired = tryAcquireLock(lockName, timeout, timeUnit);
-        }
-    }
+
+
 
 
     /**
@@ -111,17 +87,18 @@ public class RedisCacheOperator {
     }
 
     /**
-     * 如果redis中不存在该key，就将数据放入redis，并同时在指定的过期时间上随机加上[0, 30)秒
+     * 如果redis中不存在该key，就将数据放入redis，并同时在指定的过期时间上随机加上
+     * [0, {@code RedisCacheOperator.RANDOM_EXPIRE_MILLIS})秒，该操作是原子性的
      *
      * @param key      key
      * @param value    value
      * @param timeout  过期时间
      * @param timeUnit 时间的单位
      */
-    public void setIfAbsentAndExpireRandom(String key, Object value, long timeout, TimeUnit timeUnit) {
+    public void atomicSetIfAbsentAndExpireRandom(String key, Object value, long timeout, TimeUnit timeUnit) {
         if (value != null) {
             long millis = timeUnit.toMillis(timeout);
-            millis += Math.random() * 30000;
+            millis += Math.random() * RANDOM_EXPIRE_MILLIS;
             redisTemplate.opsForValue().setIfAbsent(key, value, millis, TimeUnit.MILLISECONDS);
         }
     }

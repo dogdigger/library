@@ -147,7 +147,7 @@ public class AccessTokenService {
      * @return 该令牌的剩余生存时间毫秒值
      */
     public static int ttl(AccessToken accessToken) {
-        return (int) (accessToken.getCreateTime().getTime() + accessToken.getExpire() - new Date().getTime());
+        return (int) (accessToken.getCreateTime().getTime() + accessToken.getExpire() - System.currentTimeMillis());
     }
 
     public static void main(String[] args) throws InterruptedException {

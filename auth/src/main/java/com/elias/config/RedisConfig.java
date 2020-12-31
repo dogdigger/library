@@ -16,6 +16,10 @@ public class RedisConfig {
 
     @Bean
     public RedisCacheOperator redisCacheOperator() {
+        return getRedisCacheOperator();
+    }
+
+    public static RedisCacheOperator getRedisCacheOperator() {
         return new RedisCacheOperator(RedisTemplateFactory.genericJacksonSerializerTemplate(new LettuceConnectionFactory()));
     }
 }
