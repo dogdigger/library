@@ -11,5 +11,11 @@ import java.util.UUID;
  * <p>description: </p>
  */
 public interface ClientUserRepository extends JpaRepository<ClientUser, UUID> {
+    /**
+     *
+     * @param clientId
+     * @param userId
+     * @return
+     */
     ClientUser findByClientIdAndUserId(UUID clientId, UUID userId);
 }

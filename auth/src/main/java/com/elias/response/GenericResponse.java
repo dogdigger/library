@@ -28,7 +28,11 @@ public class GenericResponse<T> {
         this("200", "ok", data);
     }
 
-    public static <T> GenericResponse<T> success(T data) {
+    public static GenericResponse<String> ok() {
+        return new GenericResponse<String>(null);
+    }
+
+    public static <T> GenericResponse<T> ok(T data) {
         return new GenericResponse<>(data);
     }
 

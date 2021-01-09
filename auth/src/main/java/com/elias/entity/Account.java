@@ -11,7 +11,7 @@ import java.util.UUID;
 /**
  * @author chengrui
  * <p>create at: 2020/11/24 3:58 下午</p>
- * <p>description: </p>
+ * <p>description: 账号</p>
  */
 @Data
 @Entity
@@ -29,7 +29,7 @@ public class Account {
     /**
      * 对应的用户id
      */
-    @Column(name = "`user_id`", columnDefinition = "binary(16) not null comment '对应的用户id'")
+    @Column(name = "`user_id`", columnDefinition = "binary(16) not null comment '用户id'")
     private UUID userId;
 
     /**

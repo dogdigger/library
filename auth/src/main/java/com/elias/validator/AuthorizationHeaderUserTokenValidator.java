@@ -19,6 +19,6 @@ public class AuthorizationHeaderUserTokenValidator implements Validator {
 
     @Override
     public void validate(String value) {
-        accessTokenService.validateUserAccessToken(AuthorizationHeaderUtils.validate(value));
+        accessTokenService.isValid(AuthorizationHeaderUtils.validate(value));
     }
 }

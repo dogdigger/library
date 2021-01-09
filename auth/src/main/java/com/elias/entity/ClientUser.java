@@ -1,5 +1,6 @@
 package com.elias.entity;
 
+import com.elias.common.Constants;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -35,26 +36,17 @@ public class ClientUser {
     @Column(name = "`user_id`", columnDefinition = "binary(16) not null comment '对应于user表的ID'")
     private UUID userId;
 
-    @Column(name = "`status`", columnDefinition = "bit(1) default true not null comment '账号的启用状态'")
-    private Boolean enabled = true;
-
     /**
      * 显示名称
      */
-    @Column(name = "`display_name`", columnDefinition = "varchar(50) not null comment '在不同客户端的名称'")
-    private String displayName;
+    @Column(name = "`display_name`", columnDefinition = "varchar(50) not null comment '显示名称'")
+    private String displayName = Constants.DEFAULT_DISPLAY_NAME;
 
     /**
-     * 密码---用户名是手机号码或者邮箱
+     * 头像地址
      */
-    @Column(name = "`password`", columnDefinition = "varchar(255) not null comment '加密后的密码'")
-    private String password;
-
-    /**
-     * 密码的盐，固定长度为16。随机生成
-     */
-    @Column(name = "`salt`", columnDefinition = "char(16) not null comment '密码的盐'")
-    private String salt;
+    @Column(name = "`avatar`", columnDefinition = "varchar(100) not null comment '头像'")
+    private String avatar = Constants.DEFAULT_AVATAR;
 
     /**
      * 记录的创建时间

@@ -37,8 +37,8 @@ public class AdminController {
 //    }
 //
 //    @GetMapping("/redirect")
-//    public void testRedirect(HttpServletResponse response) throws IOException {
-//        response.sendRedirect("http://www.baidu.com");
+//    public void testRedirect(HttpServletResponse ok) throws IOException {
+//        ok.sendRedirect("http://www.baidu.com");
 //    }
 //    @GetMapping("/redirect")
 //    public String testRedirect() {

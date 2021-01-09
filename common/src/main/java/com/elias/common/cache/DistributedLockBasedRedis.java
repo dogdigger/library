@@ -62,6 +62,25 @@ public class DistributedLockBasedRedis {
     }
 
     /**
+     * 超时阻塞式的获取分布式锁
+     *
+     * @param timeout  超时时间
+     * @param timeUnit 超时时间的单位
+     * @return boolean
+     * @throws InterruptedException InterruptedException
+     */
+    public boolean acquire(long timeout, TimeUnit timeUnit) throws InterruptedException {
+        long now = System.currentTimeMillis();
+        while (System.currentTimeMillis() - now < timeUnit.toMillis(timeout)) {
+            if (tryAcquire()) {
+                return true;
+            }
+            lockName.wait(10);
+        }
+        return false;
+    }
+
+    /**
      * 释放锁
      */
     public void release() {
@@ -73,4 +92,9 @@ public class DistributedLockBasedRedis {
         // 唤醒等到获取锁的所有线程
         lockName.notifyAll();
     }
+
+    public String getLockName() {
+        return this.lockName;
+    }
+
 }

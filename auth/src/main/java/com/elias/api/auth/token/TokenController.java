@@ -73,7 +73,7 @@ public class TokenController {
         }
         // 颁发令牌
         AccessToken accessToken = accessTokenService.getToken(clientId, AccessToken.OwnerType.CLIENT);
-        return GenericResponse.success(AccessTokenView.createFromAccessToken(accessToken));
+        return GenericResponse.ok(AccessTokenView.createFromAccessToken(accessToken));
     }
 
     @ValidRequestHeader(headerName = Constants.HEADER_AUTHORIZATION, validator = AuthorizationHeaderClientTokenValidator.class)
@@ -117,6 +117,6 @@ public class TokenController {
         }
         // 颁发令牌
         AccessToken accessToken = accessTokenService.getToken(user.getId(), AccessToken.OwnerType.USER);
-        return GenericResponse.success(AccessTokenView.createFromAccessToken(accessToken));
+        return GenericResponse.ok(AccessTokenView.createFromAccessToken(accessToken));
     }
 }

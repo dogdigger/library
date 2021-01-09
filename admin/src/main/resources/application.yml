@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: library-admin
+  thymeleaf:
+    prefix: classpath:/html/
+server:
+  port: 8898

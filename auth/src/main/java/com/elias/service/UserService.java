@@ -2,6 +2,7 @@ package com.elias.service;
 
 import com.elias.common.Constants;
 import com.elias.common.cache.RedisCacheOperator;
+import com.elias.concurrency.RedisDistributeLock;
 import com.elias.entity.User;
 import com.elias.exception.ErrorCode;
 import com.elias.exception.RestException;
@@ -25,10 +26,12 @@ import java.util.concurrent.TimeUnit;
 public class UserService {
     private final UserRepository userRepository;
     private final RedisCacheOperator redisCacheOperator;
+    private final RedisDistributeLock redisDistributeLock;
+
     /**
      * 分布式锁在redis中的key
      */
-    private static final String REDIS_KEY_DISTRIBUTED_LOCK = "auth:user:lock";
+    private static final String LOCK_NAME = "auth:user:lock";
 
     /**
      * 用户数据在redis中的key: ID映射
@@ -48,11 +51,12 @@ public class UserService {
     /**
      * 数据在redis中的有效时间，单位为秒。实际上还会在这个值的基础上再加一个随机值
      */
-    private static final long REDIS_EXPIRE_TIME = 60 * 60 * 24 * 7;
+    private static final long REDIS_EXPIRE_TIME = 7 * Constants.ExpireTimeEnum.DAY.getTime();
 
     public UserService(UserRepository userRepository, RedisCacheOperator redisCacheOperator) {
         this.userRepository = userRepository;
         this.redisCacheOperator = redisCacheOperator;
+        this.redisDistributeLock = new RedisDistributeLock(LOCK_NAME);
     }
 
     /**
@@ -62,31 +66,33 @@ public class UserService {
      */
     public User createUser(UserRegistrationForm userRegistrationForm) {
         String mobile = userRegistrationForm.getMobile(), email = userRegistrationForm.getEmail();
-        ErrorCode errorCode = null;
         User saveUser = new User();
         BeanUtils.copyProperties(userRegistrationForm, saveUser);
+        if (findUserByMobile(mobile) != null) {
+            throw new RestException(ErrorCode.REGISTERED_MOBILE);
+        }
+        if (!StringUtils.isEmpty(email) && findByEmail(email) != null) {
+            throw new RestException(ErrorCode.REGISTERED_EMAIL);
+        }
+
+        User user;
+        ErrorCode errorCode = null;
         // 获取分布式锁
-        redisCacheOperator.acquireLock(REDIS_KEY_DISTRIBUTED_LOCK, Constants.DISTRIBUTED_LOCK_EXPIRE, TimeUnit.MILLISECONDS);
-        User user = userRepository.findByMobile(mobile);
-        if (user != null) {
+        redisDistributeLock.acquire();
+        user = findUserByMobile(mobile);
+        if (user == null) {
+            if (!StringUtils.isEmpty(email) && findByEmail(email) != null) {
+                errorCode = ErrorCode.REGISTERED_EMAIL;
+            }
+            user = userRepository.save(saveUser);
+        }else {
             errorCode = ErrorCode.REGISTERED_MOBILE;
         }
-        if (errorCode == null && !StringUtils.isEmpty(email) && userRepository.findByEmail(email) != null) {
-            errorCode = ErrorCode.REGISTERED_EMAIL;
-        }
-        if (errorCode == null) {
-            user = userRepository.save(saveUser);
-        }
         // 释放分布式锁
-        redisCacheOperator.delete(REDIS_KEY_DISTRIBUTED_LOCK);
+        redisDistributeLock.release();
         if (errorCode != null) {
-            log.warn("使用 [{}] 创建用户失败: {}", userRegistrationForm, errorCode.getErrorMessage());
             throw new RestException(errorCode);
         }
-        log.info("使用 [{}] 创建用户成功", userRegistrationForm);
-        // 将数据放入redis
-        String key = String.format(REDIS_KEY_MAPPED_BY_ID, user.getId());
-        writeToCache(key, user);
         return user;
     }
 
@@ -95,7 +101,7 @@ public class UserService {
         User user = (User) redisCacheOperator.valueOperations().get(key);
         if (user == null) {
             user = userRepository.findById(userId);
-            writeToCache(String.format(REDIS_KEY_MAPPED_BY_ID, userId), user);
+            writeToCache(key, user);
         }
         return user;
     }
@@ -128,7 +134,7 @@ public class UserService {
      */
     private void writeToCache(String key, User user) {
         if (user != null) {
-            redisCacheOperator.setIfAbsentAndExpireRandom(key, user, REDIS_EXPIRE_TIME, TimeUnit.SECONDS);
+            redisCacheOperator.atomicSetIfAbsentAndExpireRandom(key, user, REDIS_EXPIRE_TIME, TimeUnit.SECONDS);
         }
     }
 }

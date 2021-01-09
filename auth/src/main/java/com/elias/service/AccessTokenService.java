@@ -2,6 +2,7 @@ package com.elias.service;
 
 import com.elias.common.Constants;
 import com.elias.common.cache.RedisCacheOperator;
+import com.elias.concurrency.RedisDistributeLock;
 import com.elias.entity.AccessToken;
 import com.elias.exception.ErrorCode;
 import com.elias.exception.RestException;
@@ -13,7 +14,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -28,18 +28,17 @@ public class AccessTokenService {
     private final AccessTokenRepository accessTokenRepository;
     private final Environment env;
     private final RedisCacheOperator redisCacheOperator;
-
-    private static volatile boolean hasDelete = false;
+    private final RedisDistributeLock redisDistributeLock;
 
     /**
      * 分布式锁在redis中的key
      */
-    private static final String REDIS_KEY_DISTRIBUTED_LOCK = "auth:token:lock";
+    private static final String LOCK_NAME = "auth:token:lock";
 
     /**
-     * 令牌在redis中的key，第一个占位符标识令牌的类型，第二个占位符标识令牌id
+     * 令牌在redis中的key，第一个占位符标识令牌id
      */
-    private static final String REDIS_KEY_DATA = "auth:token:%s:%s";
+    private static final String REDIS_KEY_DATA_MAPPED_BY_ID = "auth:token:data:%s";
 
 
     @Autowired
@@ -48,10 +47,11 @@ public class AccessTokenService {
         this.accessTokenRepository = accessTokenRepository;
         this.env = env;
         this.redisCacheOperator = redisCacheOperator;
+        this.redisDistributeLock = new RedisDistributeLock(LOCK_NAME);
     }
 
     /**
-     * 获取令牌。注意：重复获取不会生成新的令牌，除非令牌已过期
+     * 获取令牌。注意：重复获取不会生成新的令牌，除非令牌已过期，但是会刷新令牌的有效期
      * 调用该方法的地方需要自行判断 ownerId 是否是真实存在于本系统的client或user
      *
      * @param ownerId   令牌的接受者id，可能是一个client，也可能是一个user
@@ -59,29 +59,22 @@ public class AccessTokenService {
      * @return {@link AccessTokenView}
      */
     public AccessToken getToken(UUID ownerId, AccessToken.OwnerType ownerType) {
+        // 获取分布式锁
+        redisDistributeLock.acquire();
         AccessToken accessToken = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
         if (accessToken == null || ttl(accessToken) <= 0) {
-            AccessToken tmp = accessToken;
+            if (accessToken != null) {
+                // 删除已过期的令牌
+                accessTokenRepository.delete(accessToken);
+            }
             accessToken = new AccessToken();
             accessToken.setOwnerId(ownerId);
             accessToken.setOwnerType(ownerType.getType());
             accessToken.setExpire(getTokenExpire(ownerType));
-            // 获取分布式锁
-            redisCacheOperator.acquireLock(REDIS_KEY_DISTRIBUTED_LOCK, Constants.DISTRIBUTED_LOCK_EXPIRE, TimeUnit.MILLISECONDS);
-            if (tmp != null && !hasDelete) {
-                accessTokenRepository.delete(tmp);
-                hasDelete = true;
-            } else {
-                hasDelete = false;
-            }
-            AccessToken token = accessTokenRepository.findByOwnerIdAndOwnerType(ownerId, ownerType.getType());
-            accessToken = token == null ? accessTokenRepository.save(accessToken) : token;
-            // 手动释放分布式锁
-            redisCacheOperator.delete(REDIS_KEY_DISTRIBUTED_LOCK);
-            // 如果不在redis中，就放入redis
-            String key = String.format(REDIS_KEY_DATA, ownerType.getType(), accessToken.getId());
-            redisCacheOperator.setIfAbsentAndExpireRandom(key, accessToken, accessToken.getExpire(), TimeUnit.MILLISECONDS);
         }
+        accessToken = accessTokenRepository.save(accessToken);
+        // 手动释放分布式锁
+        redisDistributeLock.release();
         return accessToken;
     }
 
@@ -89,25 +82,29 @@ public class AccessTokenService {
     /**
      * 校验令牌的合法性。只有令牌能找到并且剩余生存时间大于0才是合法的令牌
      *
-     * @param accessToken 令牌
-     * @param ownerType   令牌的类型 {@link AccessToken.OwnerType}
+     * @param token 令牌
      */
-    public AccessToken isValid(UUID accessToken, AccessToken.OwnerType ownerType) {
-        // 先查询redis
-        String key = String.format(REDIS_KEY_DATA, ownerType.getType(), accessToken);
-        AccessToken token = (AccessToken) redisCacheOperator.valueOperations().get(key);
-        if (token == null) {
-            token = accessTokenRepository.findById(accessToken).orElse(null);
-            if (token == null) {
-                throw new RestException(ErrorCode.ACCESS_TOKEN_NOT_FOUND);
-            }
-            int ttl = ttl(token);
-            if (ttl <= 0) {
-                throw new RestException(ErrorCode.UNAUTHORIZED);
-            }
-            redisCacheOperator.valueOperations().setIfAbsent(key, token, ttl, TimeUnit.MILLISECONDS);
+    public AccessToken isValid(UUID token) {
+        AccessToken accessToken = findById(token);
+        if (accessToken == null) {
+            throw new RestException(ErrorCode.ACCESS_TOKEN_NOT_FOUND);
         }
-        return token;
+        if (ttl(accessToken) <= 0) {
+            throw new RestException(ErrorCode.UNAUTHORIZED);
+        }
+        return accessToken;
+    }
+
+    public AccessToken findById(UUID token) {
+        String key = String.format(REDIS_KEY_DATA_MAPPED_BY_ID, token);
+        AccessToken accessToken = (AccessToken) redisCacheOperator.valueOperations().get(key);
+        if (accessToken == null) {
+            accessToken = accessTokenRepository.findById(token).orElse(null);
+            if (accessToken != null) {
+                redisCacheOperator.atomicSetIfAbsentAndExpireRandom(key, accessToken, accessToken.getExpire(), TimeUnit.MILLISECONDS);
+            }
+        }
+        return accessToken;
     }
 
 
@@ -147,7 +144,7 @@ public class AccessTokenService {
      * @return 该令牌的剩余生存时间毫秒值
      */
     public static int ttl(AccessToken accessToken) {
-        return (int) (accessToken.getCreateTime().getTime() + accessToken.getExpire() - System.currentTimeMillis());
+        return (int) (accessToken.getUpdateTime().getTime() + accessToken.getExpire() - System.currentTimeMillis());
     }
 
     public static void main(String[] args) throws InterruptedException {

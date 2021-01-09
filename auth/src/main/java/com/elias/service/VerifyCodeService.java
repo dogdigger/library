@@ -2,6 +2,7 @@ package com.elias.service;
 
 import com.elias.common.Constants;
 import com.elias.common.cache.RedisCacheOperator;
+import com.elias.concurrency.RedisDistributeLock;
 import com.elias.entity.VerifyCode;
 import com.elias.exception.ErrorCode;
 import com.elias.exception.RestException;
@@ -24,15 +25,22 @@ public class VerifyCodeService {
 
     private final VerifyCodeRepository verifyCodeRepository;
     private final RedisCacheOperator redisCacheOperator;
+    private final RedisDistributeLock redisDistributeLock;
 
     /**
      * 分布式锁在redis中的key
      */
-    private static final String REDIS_KEY_DISTRIBUTED_LOCK = "auth:verify_code:lock";
+    private static final String LOCK_NAME = "auth:verify_code:lock";
+
+    /**
+     * 验证码在redis中的key，第一个占位符是手机号码，第二个占位符是验证码
+     */
+    private static final String KEY_MAPPED_BY_MOBILE_AND_CODE = "auth:verify_code:%s:%s";
 
     public VerifyCodeService(VerifyCodeRepository verifyCodeRepository, RedisCacheOperator redisCacheOperator) {
         this.verifyCodeRepository = verifyCodeRepository;
         this.redisCacheOperator = redisCacheOperator;
+        this.redisDistributeLock = new RedisDistributeLock(LOCK_NAME);
     }
 
     /**
@@ -49,15 +57,14 @@ public class VerifyCodeService {
         verifyCode.setMobile(mobile);
         verifyCode.setExpire(10);
         // 获取分布式锁
-        redisCacheOperator.acquireLock(REDIS_KEY_DISTRIBUTED_LOCK, Constants.DISTRIBUTED_LOCK_EXPIRE, TimeUnit.MILLISECONDS);
-        VerifyCode v;
-        while ((v = verifyCodeRepository.findByMobileAndCode(mobile, code)) != null && ttl(v) > 0) {
+        redisDistributeLock.acquire();
+        while (findByMobileAndCode(mobile, code) != null) {
             code = CommonUtils.generateRandomNumberString(6);
         }
         verifyCode.setCode(code);
         verifyCode = verifyCodeRepository.save(verifyCode);
-        // 释放锁
-        redisCacheOperator.delete(REDIS_KEY_DISTRIBUTED_LOCK);
+        // 手动释放分布式锁
+        redisDistributeLock.release();
         redisCacheOperator.valueOperations().setIfAbsent(code, verifyCode, 10, TimeUnit.MINUTES);
         log.info("为手机号 [{}] 生成的验证码是 [{}]", mobile, verifyCode);
         return verifyCode;
@@ -98,6 +105,23 @@ public class VerifyCodeService {
         long timestamp = System.currentTimeMillis();
         Date dt = CommonUtils.dateAdd(verifyCode.getCreateTime(), TimeUnit.MINUTES, verifyCode.getExpire());
         return timestamp - dt.getTime();
+    }
+
+    public VerifyCode findByMobileAndCode(String mobile, String code) {
+        String key = String.format(KEY_MAPPED_BY_MOBILE_AND_CODE, mobile, code);
+        VerifyCode verifyCode = (VerifyCode) redisCacheOperator.valueOperations().get(key);
+        if (verifyCode == null) {
+            verifyCode = verifyCodeRepository.findByMobileAndCode(mobile, code);
+            if (verifyCode != null) {
+                long ttl = ttl(verifyCode);
+                if (ttl > 0) {
+                    redisCacheOperator.atomicSetIfAbsentAndExpireRandom(key, verifyCode, ttl, TimeUnit.MILLISECONDS);
+                    return verifyCode;
+                }
+                verifyCodeRepository.delete(verifyCode);
+            }
+        }
+        return null;
     }
 
 }

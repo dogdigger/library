@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(RestException.class)
     public GenericResponse<String> handleRestException(RestException restException) {
-        return new GenericResponse<>(restException.getCode(), restException.getMessage());
+        return GenericResponse.response(restException.getCode(), restException.getMessage());
     }
 
     /**
@@ -44,7 +44,7 @@ public class GlobalExceptionHandler {
         if (!errors.isEmpty()) {
             restException.setMessage(errors.get(0).getDefaultMessage());
         }
-        return new GenericResponse<>(restException.getCode(), restException.getMessage());
+        return GenericResponse.response(restException.getCode(), restException.getMessage());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

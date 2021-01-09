@@ -3,21 +3,19 @@ package com.elias.api.auth.user;
 import com.elias.common.annotation.ValidRequestHeader;
 import com.elias.common.Constants;
 import com.elias.common.PathDefinition;
-import com.elias.entity.User;
-import com.elias.entity.VerifyCode;
 import com.elias.exception.ErrorCode;
 import com.elias.exception.RestException;
 import com.elias.model.form.user.UserRegistrationForm;
+import com.elias.model.view.UserInfoView;
 import com.elias.response.GenericResponse;
-import com.elias.service.AccountService;
-import com.elias.service.UserService;
-import com.elias.service.VerifyCodeService;
+import com.elias.service.manage.UserServiceManager;
 import com.elias.validator.AuthorizationHeaderClientTokenValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.UUID;
 
 /**
  * @author chengrui
@@ -28,29 +26,24 @@ import javax.validation.Valid;
 @RequestMapping(PathDefinition.URI_API_USER)
 @Slf4j
 public class UserController {
-    private final UserService userService;
-    private final AccountService accountService;
-    private final VerifyCodeService verifyCodeService;
+    private final UserServiceManager userServiceManager;
 
-    public UserController(UserService userService, AccountService accountService, VerifyCodeService verifyCodeService) {
-        this.userService = userService;
-        this.accountService = accountService;
-        this.verifyCodeService = verifyCodeService;
+    public UserController(UserServiceManager userServiceManager) {
+        this.userServiceManager = userServiceManager;
     }
 
     /**
-     * 用户注册
+     * 用户注册。该行为会导致两件事情
+     * （1）创建一条User记录
+     * （2）创建一条Account记录
      *
      * @param userRegistrationForm 封装用户注册所必须填的信息
      */
     @ValidRequestHeader(headerName = Constants.HEADER_AUTHORIZATION, validator = AuthorizationHeaderClientTokenValidator.class)
     @PostMapping("/actions/user-registration")
     public GenericResponse<String> userRegistration(@RequestBody @Valid UserRegistrationForm userRegistrationForm) {
-        // 1、创建user
-        User user = userService.createUser(userRegistrationForm);
-        // 2、创建account
-        accountService.createAccount(user);
-        return GenericResponse.success(null);
+        userServiceManager.userRegistration(userRegistrationForm);
+        return GenericResponse.ok();
     }
 
     /**
@@ -63,17 +56,23 @@ public class UserController {
     @GetMapping("/verify-codes")
     public GenericResponse<String> sendVerifyCode(@RequestParam(name = "mobile") String mobile) {
         // 1、参数校验
-        if (StringUtils.isEmpty(mobile) || mobile.matches(Constants.REGEXP_MOBILE)) {
+        if (StringUtils.isEmpty(mobile) || !mobile.matches(Constants.REGEXP_MOBILE)) {
             throw new RestException(ErrorCode.PARAM_INVALID);
         }
-        // 2、检查手机号收否已注册
-        User user = userService.findUserByMobile(mobile);
-        if (user == null) {
-            throw new RestException(ErrorCode.UNREGISTERED_MOBILE);
+        // 2、生成验证码
+        String verifyCode = userServiceManager.sendVerifyCode(mobile);
+        // 3、发送验证码
+        return GenericResponse.ok(verifyCode);
+    }
+
+    @GetMapping("/info")
+    public GenericResponse<UserInfoView> findUserInfo(@RequestParam(name = "userId", required = false) UUID userId,
+                                                      @RequestParam(name = "mobile", required = false) String mobile,
+                                                      @RequestParam(name = "email", required = false) String email,
+                                                      @RequestParam(name = "clientUserId", required = false) UUID clientUserId) {
+        if (userId == null && StringUtils.isEmpty(mobile) && StringUtils.isEmpty(email) && clientUserId == null) {
+            throw new RestException(ErrorCode.PARAM_INVALID, "userId、mobile、email、clientUserId至少要有一个不为空");
         }
-        // 3、生成验证码
-        VerifyCode verifyCode = verifyCodeService.createVerifyCode(mobile);
-        // 4、发送验证码
-        return GenericResponse.success(verifyCode.getCode());
+        return GenericResponse.ok(userServiceManager.getUserInfo(userId, mobile, email, clientUserId));
     }
 }

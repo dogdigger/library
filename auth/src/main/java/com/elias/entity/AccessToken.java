@@ -3,6 +3,7 @@ package com.elias.entity;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -34,7 +35,7 @@ public class AccessToken {
     /**
      * 令牌拥有者的id
      */
-    @Column(name = "`owner_id`", columnDefinition = "binary(16) not null comment '令牌的拥有者，可能是userId，也可能是clientId'")
+    @Column(name = "`owner_id`", columnDefinition = "binary(16) not null comment '令牌的拥有者，可能是clientUserId，也可能是clientId'")
     private UUID ownerId;
 
     /**
@@ -50,17 +51,37 @@ public class AccessToken {
     private Integer expire;
 
     /**
-     * 记录的创建时间
+     * 令牌的创建时间
      */
     @Temporal(TemporalType.TIMESTAMP)
     @CreationTimestamp
     @Column(name = "create_time", updatable = false, columnDefinition = "datetime comment '令牌的创建时间'")
     private Date createTime;
 
-    public enum OwnerType {
-        CLIENT(1), USER(2);
+    /**
+     * 令牌的最后更新时间
+     */
+    @Temporal(TemporalType.TIMESTAMP)
+    @UpdateTimestamp
+    @Column(name = "update_time", columnDefinition = "datetime comment '令牌的最后更新时间'")
+    private Date updateTime;
 
+    public enum OwnerType {
+        /**
+         * 客户端
+         */
+        CLIENT(1),
+
+        /**
+         * 用户
+         */
+        USER(2);
+
+        /**
+         * 标识拥有者的类型
+         */
         private final int type;
+
         OwnerType(int type) {
             this.type = type;
         }

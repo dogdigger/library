@@ -11,5 +11,11 @@ import java.util.UUID;
  * <p>description: </p>
  */
 public interface AccountRepository extends JpaRepository<Account, UUID> {
+    /**
+     * 根据用户id来查找用户的账号信息
+     *
+     * @param userId 用户id
+     * @return Account
+     */
     Account findByUserId(UUID userId);
 }

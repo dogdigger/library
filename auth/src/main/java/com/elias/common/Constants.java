@@ -25,11 +25,6 @@ public final class Constants {
     public static final String ENV_USER_TOKEN_EXPIRE_KEY = "expire.token.user";
 
     /**
-     * 访问令牌在redis中的哈希key
-     */
-    public static final String REDIS_KEY_ACCESS_TOKEN = "auth:accessToken";
-
-    /**
      * 分布式锁的过期时间，单位毫秒
      */
     public static final long DISTRIBUTED_LOCK_EXPIRE = 2000;
@@ -48,6 +43,16 @@ public final class Constants {
      * 手机号码的正则表达式
      */
     public static final String REGEXP_MOBILE = "1[3-9]\\d{9}";
+
+    /**
+     * 默认的用户显示名称
+     */
+    public static final String DEFAULT_DISPLAY_NAME = "匿名用户";
+
+    /**
+     * 默认的用户头像地址
+     */
+    public static final String DEFAULT_AVATAR = "";
 
     /**
      * 数据在redis中的过期时间枚举，单位为秒
@@ -84,6 +89,10 @@ public final class Constants {
             this.expire = expire;
         }
 
+        /**
+         * 以秒为单位
+         * @return
+         */
         public long getTime() {
             return expire;
         }

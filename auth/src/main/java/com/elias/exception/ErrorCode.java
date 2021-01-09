@@ -71,9 +71,19 @@ public enum ErrorCode {
     WRONG_VERIFY_CODE(HttpStatus.BAD_REQUEST, 10011, "wrong verify code"),
 
     /**
-     * 重复注册
+     * 重复操作
      */
-    DUPLICATE_REGISTRATION(HttpStatus.BAD_REQUEST, 10012, "duplicate registraction"),
+    DUPLICATE_OPERATION(HttpStatus.BAD_REQUEST, 10012, "duplicate operation"),
+
+    /**
+     * 重复创建账号
+     */
+    CREATE_DUPLICATE_ACCOUNT(HttpStatus.BAD_REQUEST, 10013, "create duplicate account"),
+
+    /**
+     * 重复创建客户端用户
+     */
+    CREATE_DUPLICATE_CLIENT_USER(HttpStatus.BAD_REQUEST, 10014, "create duplicate client user"),
 
 
     // ------------------------------------------- unauthorized(401): 20000 -------------------------------------------
@@ -112,7 +122,7 @@ public enum ErrorCode {
     VERIFY_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, 40003, "Nonexistent verifyCode"),
 
     /**
-     * 不存在的用户：根据手机号和邮箱都找不到
+     * 不存在的用户
      */
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, 40004, "user not found"),
 
@@ -123,7 +133,12 @@ public enum ErrorCode {
     /**
      * 配置项错误
      */
-    WRONG_CONFIGURATION_ITEM(HttpStatus.INTERNAL_SERVER_ERROR, 50000, "wrong configuration item");
+    WRONG_CONFIGURATION_ITEM(HttpStatus.INTERNAL_SERVER_ERROR, 50000, "wrong configuration item"),
+
+    /**
+     * 并发错误，通常是获取所失败
+     */
+    CONCURRENCY_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 50001, "concurrency error");
 
 
     private final HttpStatus httpStatus;

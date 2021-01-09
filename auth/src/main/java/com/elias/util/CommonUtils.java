@@ -1,6 +1,7 @@
 package com.elias.util;
 
 import java.util.Date;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -15,17 +16,17 @@ public final class CommonUtils {
     /**
      * 字母表，存储a-zA-Z0-9等62个字母
      */
-    private static final char[] chars = new char[62];
+    private static final char[] CHARS = new char[62];
 
     static {
         char ch1 = 'a', ch2 = 'Z', ch3 = '0';
         int pos = 0;
         while (ch1 <= 'z') {
-            chars[pos++] = ch1++;
-            chars[pos++] = ch2--;
+            CHARS[pos++] = ch1++;
+            CHARS[pos++] = ch2--;
         }
         while (ch3 <= '9') {
-            chars[pos++] = ch3++;
+            CHARS[pos++] = ch3++;
         }
     }
 
@@ -36,9 +37,10 @@ public final class CommonUtils {
      * @return 随机数字字符串
      */
     public static String generateRandomNumberString(int len) {
+        Random random = new Random();
         StringBuilder builder = new StringBuilder(len);
         for (int i = 0; i < len; i++) {
-            builder.append((int) (Math.random() * 10));
+            builder.append(random.nextInt(10));
         }
         return builder.toString();
     }
@@ -51,9 +53,10 @@ public final class CommonUtils {
      */
     public static String generateRandomString(int len) {
         StringBuilder builder = new StringBuilder(len);
-        int bound = chars.length;
+        int bound = CHARS.length;
+        Random random = new Random();
         for (int i = 0; i < len; i++) {
-            builder.append(chars[(int) (Math.random() * bound)]);
+            builder.append(CHARS[random.nextInt(bound)]);
         }
         return builder.toString();
     }
@@ -78,5 +81,10 @@ public final class CommonUtils {
         for (int i = 0; i < 10; i++) {
             System.out.println(generateRandomString(10));
         }
+        System.out.println("================");
+//        Random random = new Random();
+//        for (int i = 0; i < 100; i++) {
+//            System.out.println(random.nextInt(60));
+//        }
     }
 }
